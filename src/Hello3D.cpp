@@ -1,11 +1,4 @@
-/* Hello Triangle - código adaptado de https://learnopengl.com/#!Getting-started/Hello-Triangle
- *
- * Adaptado por Rossana Baptista Queiroz
- * para as disciplinas de Processamento Gráfico/Computação Gráfica - Unisinos
- * Versão inicial: 7/4/2017
- * Última atualização em 07/03/2025
- */
-
+/* Hello Triangle - */
 #include <iostream>
 #include <string>
 #include <assert.h>
@@ -22,7 +15,6 @@ using namespace std;
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
 
 // Protótipo da função de callback de teclado
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -56,26 +48,14 @@ const GLchar* fragmentShaderSource = "#version 450\n"
 "color = finalColor;\n"
 "}\n\0";
 
-bool rotateX=false, rotateY=false, rotateZ=false;
+bool rotateW=false, rotateS=false, rotateA=false, rotateD=false, rotateI=false, rotateJ=false;
+float scale = 0.5f;
 
 // Função MAIN
 int main()
 {
 	// Inicialização da GLFW
 	glfwInit();
-
-	//Muita atenção aqui: alguns ambientes não aceitam essas configurações
-	//Você deve adaptar para a versão do OpenGL suportada por sua placa
-	//Sugestão: comente essas linhas de código para desobrir a versão e
-	//depois atualize (por exemplo: 4.5 com 4 e 5)
-	//glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	//glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-	//Essencial para computadores da Apple
-//#ifdef __APPLE__
-//	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-//#endif
 
 	// Criação da janela GLFW
 	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Ola 3D -- Marcelo!", nullptr, nullptr);
@@ -88,7 +68,6 @@ int main()
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
 		std::cout << "Failed to initialize GLAD" << std::endl;
-
 	}
 
 	// Obtendo as informações de versão
@@ -102,29 +81,41 @@ int main()
 	glfwGetFramebufferSize(window, &width, &height);
 	glViewport(0, 0, width, height);
 
-
 	// Compilando e buildando o programa de shader
 	GLuint shaderID = setupShader();
 
 	// Gerando um buffer simples, com a geometria de um triângulo
 	GLuint VAO = setupGeometry();
-
-
 	glUseProgram(shaderID);
 
-	glm::mat4 model = glm::mat4(1); //matriz identidade;
+	// Cubo 1
+	glm::mat4 model1 = glm::mat4(1); //matriz identidade;
+	// Cubo 2
+	glm::mat4 model2 = glm::mat4(1); //matriz identidade;
+	// Cubo 3
+	glm::mat4 model3 = glm::mat4(1); //matriz identidade;
+	// Cubo 4
+	glm::mat4 model4 = glm::mat4(1); //matriz identidade;
 	GLint modelLoc = glGetUniformLocation(shaderID, "model");
-	//
-	model = glm::rotate(model, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+	model1 = glm::rotate(model1, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model1));
+
+	model2 = glm::rotate(model2, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
+
+	model3 = glm::rotate(model3, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model3));
+
+	model4 = glm::rotate(model4, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model4));
 
 	glEnable(GL_DEPTH_TEST);
-
 
 	// Loop da aplicação - "game loop"
 	while (!glfwWindowShouldClose(window))
 	{
-		// Checa se houveram eventos de input (key pressed, mouse moved etc.) e chama as funções de callback correspondentes
+		// Verifica se houveram eventos de input (key pressed, mouse moved etc.) e chama as funções de callback correspondentes
 		glfwPollEvents();
 
 		// Limpa o buffer de cor
@@ -136,34 +127,92 @@ int main()
 
 		float angle = (GLfloat)glfwGetTime();
 
-		model = glm::mat4(1); 
-		if (rotateX)
+		// Instanciação dos cubos e aplicação de rotação em cada um
+		model1 = glm::mat4(1);
+		model2 = glm::mat4(1);
+		model3 = glm::mat4(1);
+		model4 = glm::mat4(1);
+		if (rotateW)
 		{
-			model = glm::rotate(model, angle, glm::vec3(1.0f, 0.0f, 0.0f));
-			
+			model1 = glm::rotate(model1, angle, glm::vec3(1.0f, 0.0f, 0.0f));
+			model2 = glm::rotate(model2, angle, glm::vec3(1.0f, 0.0f, 0.0f));
+			model3 = glm::rotate(model3, angle, glm::vec3(1.0f, 0.0f, 0.0f));
+			model4 = glm::rotate(model4, angle, glm::vec3(1.0f, 0.0f, 0.0f));
 		}
-		else if (rotateY)
+		else if (rotateS)
 		{
-			model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-
+			model1 = glm::rotate(model1, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
+			model2 = glm::rotate(model2, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
+			model3 = glm::rotate(model3, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
+			model4 = glm::rotate(model4, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
 		}
-		else if (rotateZ)
+		else if (rotateA)
 		{
-			model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
-
+			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			model4 = glm::rotate(model4, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+		else if (rotateD)
+		{
+			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, -1.0f, 0.0f));
+			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, -1.0f, 0.0f));
+			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, -1.0f, 0.0f));
+			model4 = glm::rotate(model4, angle, glm::vec3(0.0f, -1.0f, 0.0f));
+		}
+		else if (rotateI)
+		{
+			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, 1.0f));
+			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, 1.0f));
+			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, 0.0f, 1.0f));
+			model4 = glm::rotate(model4, angle, glm::vec3(0.0f, 0.0f, 1.0f));
+		}
+		else if (rotateJ)
+		{
+			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, -1.0f));
+			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, -1.0f));
+			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, 0.0f, -1.0f));
+			model4 = glm::rotate(model4, angle, glm::vec3(0.0f, 0.0f, -1.0f));
 		}
 
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		// Chamada de desenho - drawcall
-		// Poligono Preenchido - GL_TRIANGLES
-		
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 18);
 
-		// Chamada de desenho - drawcall
-		// CONTORNO - GL_LINE_LOOP
-		
-		glDrawArrays(GL_POINTS, 0, 18);
+		// Move cubo 1 para a esquerda e para baixo
+		model1 = glm::translate(model1, glm::vec3(-0.4f, -0.4f, 0.0f));
+		// Aplica a escala
+		model1 = glm::scale(model1, glm::vec3(scale, scale, scale));
+		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model1));
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDrawArrays(GL_POINTS, 0, 36);
+
+		// Move cubo 2 para a direita e para baixo
+		model2 = glm::translate(model2, glm::vec3(0.4f, -0.4f, 0.0f));
+		// Aplica a escala
+		model2 = glm::scale(model2, glm::vec3(scale, scale, scale));
+		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDrawArrays(GL_POINTS, 0, 36);
+
+		// Move cubo 3 para a esquerda e para cima
+		model3 = glm::translate(model3, glm::vec3(-0.4f, 0.4f, 0.0f));
+		// Aplica a escala
+		model3 = glm::scale(model3, glm::vec3(scale, scale, scale));
+		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model3));
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDrawArrays(GL_POINTS, 0, 36);
+
+		// Move cubo 4 para a direita e para cima
+		model4 = glm::translate(model4, glm::vec3(0.4f, 0.4f, 0.0f));
+		// Aplica a escala
+		model4 = glm::scale(model4, glm::vec3(scale, scale, scale));
+		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model4));
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDrawArrays(GL_POINTS, 0, 36);
+
 		glBindVertexArray(0);
 
 		// Troca os buffers da tela
@@ -184,29 +233,68 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 
-	if (key == GLFW_KEY_X && action == GLFW_PRESS)
+	if (key == GLFW_KEY_W && action == GLFW_PRESS)
 	{
-		rotateX = true;
-		rotateY = false;
-		rotateZ = false;
+		rotateW = true;
+		rotateS = false;
+		rotateA = false;
+		rotateD = false;
+		rotateI = false;
+		rotateJ = false;
 	}
-
-	if (key == GLFW_KEY_Y && action == GLFW_PRESS)
+	if (key == GLFW_KEY_S && action == GLFW_PRESS)
 	{
-		rotateX = false;
-		rotateY = true;
-		rotateZ = false;
+		rotateW = false;
+		rotateS = true;
+		rotateA = false;
+		rotateD = false;
+		rotateI = false;
+		rotateJ = false;
 	}
-
+	if (key == GLFW_KEY_A && action == GLFW_PRESS)
+	{
+		rotateW = false;
+		rotateS = false;
+		rotateA = true;
+		rotateD = false;
+		rotateI = false;
+		rotateJ = false;
+	}
+	if (key == GLFW_KEY_D && action == GLFW_PRESS)
+	{
+		rotateW = false;
+		rotateS = false;
+		rotateA = false;
+		rotateD = true;
+		rotateI = false;
+		rotateJ = false;
+	}
+	if (key == GLFW_KEY_I && action == GLFW_PRESS)
+	{
+		rotateW = false;
+		rotateS = false;
+		rotateA = false;
+		rotateD = false;
+		rotateI = true;
+		rotateJ = false;
+	}
+	if (key == GLFW_KEY_J && action == GLFW_PRESS)
+	{
+		rotateW = false;
+		rotateS = false;
+		rotateA = false;
+		rotateD = false;
+		rotateI = false;
+		rotateJ = true;
+	}
 	if (key == GLFW_KEY_Z && action == GLFW_PRESS)
-	{
-		rotateX = false;
-		rotateY = false;
-		rotateZ = true;
-	}
-
-
-
+    {
+        scale += 0.1f; // Aumenta a escala
+    }
+	if (key == GLFW_KEY_X && action == GLFW_PRESS)
+    {
+        scale = glm::max(0.1f, scale - 0.1f); // Diminui a escala e impede valores negativos
+    }
 }
 
 //Esta função está basntante hardcoded - objetivo é compilar e "buildar" um programa de
@@ -270,34 +358,60 @@ int setupGeometry()
 	// Pode ser arazenado em um VBO único ou em VBOs separados
 	GLfloat vertices[] = {
 
-		//Base da pirâmide: 2 triângulos
+		//Base do cubo: 2 triângulos
 		//x    y    z    r    g    b
 		-0.5, -0.5, -0.5, 1.0, 1.0, 0.0,
 		-0.5, -0.5,  0.5, 0.0, 1.0, 1.0,
 		 0.5, -0.5, -0.5, 1.0, 0.0, 1.0,
 
-		 -0.5, -0.5, 0.5, 1.0, 1.0, 0.0,
-		  0.5, -0.5,  0.5, 0.0, 1.0, 1.0,
-		  0.5, -0.5, -0.5, 1.0, 0.0, 1.0,
+		-0.5, -0.5, 0.5, 1.0, 1.0, 0.0,
+		 0.5, -0.5,  0.5, 0.0, 1.0, 1.0,
+		 0.5, -0.5, -0.5, 1.0, 0.0, 1.0,
 
-		 //
-		 -0.5, -0.5, -0.5, 1.0, 1.0, 0.0,
-		  0.0,  0.5,  0.0, 1.0, 1.0, 0.0,
-		  0.5, -0.5, -0.5, 1.0, 1.0, 0.0,
+		 // 1º lado
+		-0.5, -0.5, -0.5, 0.5, 1.0, 0.5,
+		-0.5,  0.5, -0.5, 0.5, 1.0, 0.5,
+		 0.5, -0.5, -0.5, 0.5, 1.0, 0.5,
 
-		  -0.5, -0.5, -0.5, 1.0, 0.0, 1.0,
-		  0.0,  0.5,  0.0, 1.0, 0.0, 1.0,
-		  -0.5, -0.5, 0.5, 1.0, 0.0, 1.0,
+		-0.5,  0.5, -0.5, 0.5, 1.0, 0.5,
+		 0.5,  0.5, -0.5, 0.5, 1.0, 0.5,
+		 0.5, -0.5, -0.5, 0.5, 1.0, 0.5,
 
-		   -0.5, -0.5, 0.5, 1.0, 1.0, 0.0,
-		  0.0,  0.5,  0.0, 1.0, 1.0, 0.0,
-		  0.5, -0.5, 0.5, 1.0, 1.0, 0.0,
+		 // 2º lado
+		-0.5, -0.5, -0.5, 1.0, 0.0, 1.0,
+		-0.5,  0.5, -0.5, 1.0, 0.0, 1.0,
+		-0.5, -0.5, 0.5, 1.0, 0.0, 1.0,
 
-		   0.5, -0.5, 0.5, 0.0, 1.0, 1.0,
-		  0.0,  0.5,  0.0, 0.0, 1.0, 1.0,
-		  0.5, -0.5, -0.5, 0.0, 1.0, 1.0,
+		-0.5,  0.5, -0.5, 1.0, 0.0, 1.0,
+		-0.5,  0.5,  0.5, 1.0, 0.0, 1.0,
+		-0.5, -0.5, 0.5, 1.0, 0.0, 1.0,
 
+		  // 3º lado
+		-0.5, -0.5, 0.5, 1.0, 1.0, 0.0,
+		-0.5,  0.5, 0.5, 1.0, 1.0, 0.0,
+		 0.5, -0.5, 0.5, 1.0, 1.0, 0.0,
 
+		-0.5,  0.5, 0.5, 1.0, 1.0, 0.0,
+		 0.5,  0.5, 0.5, 1.0, 1.0, 0.0,
+		 0.5, -0.5, 0.5, 1.0, 1.0, 0.0,
+
+		  // 4º lado
+		 0.5, -0.5, 0.5, 0.0, 1.0, 1.0,
+		 0.5,  0.5,  0.5, 0.0, 1.0, 1.0,
+		 0.5, -0.5, -0.5, 0.0, 1.0, 1.0,
+
+		 0.5,  0.5, 0.5, 0.0, 1.0, 1.0,
+		 0.5,  0.5, -0.5, 0.0, 1.0, 1.0,
+		 0.5, -0.5, -0.5, 0.0, 1.0, 1.0,
+
+		// topo do cubo
+		-0.5, 0.5, -0.5, 1.0, 1.0, 0.0,
+		-0.5, 0.5,  0.5, 0.0, 1.0, 1.0,
+		 0.5, 0.5, -0.5, 1.0, 0.0, 1.0,
+
+		-0.5, 0.5, 0.5, 1.0, 1.0, 0.0,
+		 0.5, 0.5,  0.5, 0.0, 1.0, 1.0,
+		 0.5, 0.5, -0.5, 1.0, 0.0, 1.0,
 	};
 
 	GLuint VBO, VAO;
@@ -344,4 +458,3 @@ int setupGeometry()
 
 	return VAO;
 }
-
