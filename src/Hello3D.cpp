@@ -1,4 +1,15 @@
 /* Hello Triangle - */
+// Configuração do cmake:
+// Ctrl + Shift + P > CMake: Scan for kit
+// Ctrl + Shift + P > CMake: Select a kit
+// Ctrl + Shift + P > CMake: Configure
+// No terminal: cmake --build . > ./Hello3D.exe
+
+// Comandos:
+// Setas e teclas 1 e 2: rotações
+// WASD e IJ: translações
+// Z e X: escala
+
 #include <iostream>
 #include <string>
 #include <assert.h>
@@ -48,7 +59,11 @@ const GLchar* fragmentShaderSource = "#version 450\n"
 "color = finalColor;\n"
 "}\n\0";
 
-bool rotateW=false, rotateS=false, rotateA=false, rotateD=false, rotateI=false, rotateJ=false;
+float positiveX = 0.4f, negativeX = -0.4f; // positiveX = inicia o eixxo X com 0.4 positivo; negativeX = inicia o eixo X com 0.4 negativo
+float positiveY = 0.4f, negativeY = -0.4f; // mesma lógica do X, mas para o Y
+float z = 0.0f;							   // os 4 cubos iniciam com z = 0, portanto não existe distinção para o z
+
+bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
 float scale = 0.5f;
 
 // Função MAIN
@@ -132,42 +147,42 @@ int main()
 		model2 = glm::mat4(1);
 		model3 = glm::mat4(1);
 		model4 = glm::mat4(1);
-		if (rotateW)
+		if (rotateUp)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(1.0f, 0.0f, 0.0f));
 			model2 = glm::rotate(model2, angle, glm::vec3(1.0f, 0.0f, 0.0f));
 			model3 = glm::rotate(model3, angle, glm::vec3(1.0f, 0.0f, 0.0f));
 			model4 = glm::rotate(model4, angle, glm::vec3(1.0f, 0.0f, 0.0f));
 		}
-		else if (rotateS)
+		else if (rotateDown)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
 			model2 = glm::rotate(model2, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
 			model3 = glm::rotate(model3, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
 			model4 = glm::rotate(model4, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
 		}
-		else if (rotateA)
+		else if (rotateLeft)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 1.0f, 0.0f));
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 1.0f, 0.0f));
 			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, 1.0f, 0.0f));
 			model4 = glm::rotate(model4, angle, glm::vec3(0.0f, 1.0f, 0.0f));
 		}
-		else if (rotateD)
+		else if (rotateRight)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, -1.0f, 0.0f));
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, -1.0f, 0.0f));
 			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, -1.0f, 0.0f));
 			model4 = glm::rotate(model4, angle, glm::vec3(0.0f, -1.0f, 0.0f));
 		}
-		else if (rotateI)
+		else if (rotate1)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, 1.0f));
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, 1.0f));
 			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, 0.0f, 1.0f));
 			model4 = glm::rotate(model4, angle, glm::vec3(0.0f, 0.0f, 1.0f));
 		}
-		else if (rotateJ)
+		else if (rotate2)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, -1.0f));
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, -1.0f));
@@ -178,7 +193,7 @@ int main()
 		glBindVertexArray(VAO);
 
 		// Move cubo 1 para a esquerda e para baixo
-		model1 = glm::translate(model1, glm::vec3(-0.4f, -0.4f, 0.0f));
+		model1 = glm::translate(model1, glm::vec3(negativeX, negativeY, z));
 		// Aplica a escala
 		model1 = glm::scale(model1, glm::vec3(scale, scale, scale));
 		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
@@ -187,7 +202,7 @@ int main()
 		glDrawArrays(GL_POINTS, 0, 36);
 
 		// Move cubo 2 para a direita e para baixo
-		model2 = glm::translate(model2, glm::vec3(0.4f, -0.4f, 0.0f));
+		model2 = glm::translate(model2, glm::vec3(positiveX, negativeY, z));
 		// Aplica a escala
 		model2 = glm::scale(model2, glm::vec3(scale, scale, scale));
 		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
@@ -196,7 +211,7 @@ int main()
 		glDrawArrays(GL_POINTS, 0, 36);
 
 		// Move cubo 3 para a esquerda e para cima
-		model3 = glm::translate(model3, glm::vec3(-0.4f, 0.4f, 0.0f));
+		model3 = glm::translate(model3, glm::vec3(negativeX, positiveY, z));
 		// Aplica a escala
 		model3 = glm::scale(model3, glm::vec3(scale, scale, scale));
 		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
@@ -205,7 +220,7 @@ int main()
 		glDrawArrays(GL_POINTS, 0, 36);
 
 		// Move cubo 4 para a direita e para cima
-		model4 = glm::translate(model4, glm::vec3(0.4f, 0.4f, 0.0f));
+		model4 = glm::translate(model4, glm::vec3(positiveX, positiveY, z));
 		// Aplica a escala
 		model4 = glm::scale(model4, glm::vec3(scale, scale, scale));
 		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
@@ -233,68 +248,82 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 
-	if (key == GLFW_KEY_W && action == GLFW_PRESS)
-	{
-		rotateW = true;
-		rotateS = false;
-		rotateA = false;
-		rotateD = false;
-		rotateI = false;
-		rotateJ = false;
+	if (key == GLFW_KEY_UP && action == GLFW_PRESS) {
+		rotateUp = true;
+		rotateDown = false;
+		rotateLeft = false;
+		rotateRight = false;
+		rotate1 = false;
+		rotate2 = false;
 	}
-	if (key == GLFW_KEY_S && action == GLFW_PRESS)
-	{
-		rotateW = false;
-		rotateS = true;
-		rotateA = false;
-		rotateD = false;
-		rotateI = false;
-		rotateJ = false;
+	if (key == GLFW_KEY_DOWN && action == GLFW_PRESS) {
+		rotateUp = false;
+		rotateDown = true;
+		rotateLeft = false;
+		rotateRight = false;
+		rotate1 = false;
+		rotate2 = false;
 	}
-	if (key == GLFW_KEY_A && action == GLFW_PRESS)
-	{
-		rotateW = false;
-		rotateS = false;
-		rotateA = true;
-		rotateD = false;
-		rotateI = false;
-		rotateJ = false;
+	if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
+		rotateUp = false;
+		rotateDown = false;
+		rotateLeft = true;
+		rotateRight = false;
+		rotate1 = false;
+		rotate2 = false;
 	}
-	if (key == GLFW_KEY_D && action == GLFW_PRESS)
-	{
-		rotateW = false;
-		rotateS = false;
-		rotateA = false;
-		rotateD = true;
-		rotateI = false;
-		rotateJ = false;
+	if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
+		rotateUp = false;
+		rotateDown = false;
+		rotateLeft = false;
+		rotateRight = true;
+		rotate1 = false;
+		rotate2 = false;
 	}
-	if (key == GLFW_KEY_I && action == GLFW_PRESS)
-	{
-		rotateW = false;
-		rotateS = false;
-		rotateA = false;
-		rotateD = false;
-		rotateI = true;
-		rotateJ = false;
+	if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
+		rotateUp = false;
+		rotateDown = false;
+		rotateLeft = false;
+		rotateRight = false;
+		rotate1 = true;
+		rotate2 = false;
 	}
-	if (key == GLFW_KEY_J && action == GLFW_PRESS)
-	{
-		rotateW = false;
-		rotateS = false;
-		rotateA = false;
-		rotateD = false;
-		rotateI = false;
-		rotateJ = true;
+	if (key == GLFW_KEY_2 && action == GLFW_PRESS) {
+		rotateUp = false;
+		rotateDown = false;
+		rotateLeft = false;
+		rotateRight = false;
+		rotate1 = false;
+		rotate2 = true;
 	}
-	if (key == GLFW_KEY_Z && action == GLFW_PRESS)
-    {
-        scale += 0.1f; // Aumenta a escala
+	if (key == GLFW_KEY_Z && action == GLFW_PRESS) { // Aumenta a escala
+        scale += 0.1f; 
     }
-	if (key == GLFW_KEY_X && action == GLFW_PRESS)
-    {
-        scale = glm::max(0.1f, scale - 0.1f); // Diminui a escala e impede valores negativos
+	if (key == GLFW_KEY_X && action == GLFW_PRESS) { // Diminui a escala e impede valores negativos
+        scale = glm::max(0.1f, scale - 0.1f); 
     }
+	if (key == GLFW_KEY_W && action == GLFW_PRESS) { // Move no eixo Y (para cima)
+		positiveY += 0.2f;
+		negativeY += 0.2f;
+	}
+	if (key == GLFW_KEY_S && action == GLFW_PRESS) { // Move no eixo Y (para baixo)
+		positiveY -= 0.2f;
+		negativeY -= 0.2f;
+	}
+	if (key == GLFW_KEY_A && action == GLFW_PRESS) { // Move no eixo X (para a esquerda)
+		positiveX -= 0.2f;
+		negativeX -= 0.2f;
+	}
+	if (key == GLFW_KEY_D && action == GLFW_PRESS) { // Move no eixo X (para a direita)
+		positiveX += 0.2f;
+		negativeX += 0.2f;
+	}
+	if (key == GLFW_KEY_I && action == GLFW_PRESS) { // Move no eixo Z (para frente)
+		z += 0.2f;
+	}
+	if (key == GLFW_KEY_J && action == GLFW_PRESS) { // Move no eixo Z (para trás)
+		z -= 0.2f;
+	}
 }
 
 //Esta função está basntante hardcoded - objetivo é compilar e "buildar" um programa de
@@ -352,7 +381,7 @@ int setupShader()
 // A função retorna o identificador do VAO
 int setupGeometry()
 {
-	// Aqui setamos as coordenadas x, y e z do triângulo e as armazenamos de forma
+	// Aqui setamos as coordenadas x, y e z de cada  triângulo e as armazenamos de forma
 	// sequencial, já visando mandar para o VBO (Vertex Buffer Objects)
 	// Cada atributo do vértice (coordenada, cores, coordenadas de textura, normal, etc)
 	// Pode ser arazenado em um VBO único ou em VBOs separados
@@ -447,7 +476,6 @@ int setupGeometry()
 	//Atributo cor (r, g, b)
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
-
 
 	// Observe que isso é permitido, a chamada para glVertexAttribPointer registrou o VBO como o objeto de buffer de vértice 
 	// atualmente vinculado - para que depois possamos desvincular com segurança
