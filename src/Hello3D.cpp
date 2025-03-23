@@ -10,6 +10,8 @@
 // WASD e IJ: translações
 // Z e X: escala
 
+// Comentarios sobre tarefa M3: a partir do minuto 24:40 da aula do dia 21/03
+
 #include <iostream>
 #include <string>
 #include <assert.h>
