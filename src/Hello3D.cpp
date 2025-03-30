@@ -59,9 +59,9 @@ const GLchar* fragmentShaderSource = "#version 450\n"
 "color = finalColor;\n"
 "}\n\0";
 
-float positiveX = 0.4f, negativeX = -0.4f; // positiveX = inicia o eixxo X com 0.4 positivo; negativeX = inicia o eixo X com 0.4 negativo
-float positiveY = 0.4f, negativeY = -0.4f; // mesma lógica do X, mas para o Y
-float z = 0.0f;							   // os 4 cubos iniciam com z = 0, portanto não existe distinção para o z
+float x = 0.0f;							   // os 2 cubos iniciam com x = 0
+float positiveY = 0.4f, negativeY = -0.4f; // positiveY = inicia o eixo Y com +0.4; negativeY = inicia o eixo Y com -0.4
+float z = 0.0f;							   // os 2 cubos iniciam com z = 0
 
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
 float scale = 0.5f;
@@ -107,10 +107,6 @@ int main()
 	glm::mat4 model1 = glm::mat4(1); //matriz identidade;
 	// Cubo 2
 	glm::mat4 model2 = glm::mat4(1); //matriz identidade;
-	// Cubo 3
-	glm::mat4 model3 = glm::mat4(1); //matriz identidade;
-	// Cubo 4
-	glm::mat4 model4 = glm::mat4(1); //matriz identidade;
 	GLint modelLoc = glGetUniformLocation(shaderID, "model");
 
 	model1 = glm::rotate(model1, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -118,12 +114,6 @@ int main()
 
 	model2 = glm::rotate(model2, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
-
-	model3 = glm::rotate(model3, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model3));
-
-	model4 = glm::rotate(model4, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model4));
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -145,55 +135,41 @@ int main()
 		// Instanciação dos cubos e aplicação de rotação em cada um
 		model1 = glm::mat4(1);
 		model2 = glm::mat4(1);
-		model3 = glm::mat4(1);
-		model4 = glm::mat4(1);
 		if (rotateUp)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(1.0f, 0.0f, 0.0f));
 			model2 = glm::rotate(model2, angle, glm::vec3(1.0f, 0.0f, 0.0f));
-			model3 = glm::rotate(model3, angle, glm::vec3(1.0f, 0.0f, 0.0f));
-			model4 = glm::rotate(model4, angle, glm::vec3(1.0f, 0.0f, 0.0f));
 		}
 		else if (rotateDown)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
 			model2 = glm::rotate(model2, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
-			model3 = glm::rotate(model3, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
-			model4 = glm::rotate(model4, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
 		}
 		else if (rotateLeft)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 1.0f, 0.0f));
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-			model4 = glm::rotate(model4, angle, glm::vec3(0.0f, 1.0f, 0.0f));
 		}
 		else if (rotateRight)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, -1.0f, 0.0f));
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, -1.0f, 0.0f));
-			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, -1.0f, 0.0f));
-			model4 = glm::rotate(model4, angle, glm::vec3(0.0f, -1.0f, 0.0f));
 		}
 		else if (rotate1)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, 1.0f));
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, 1.0f));
-			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, 0.0f, 1.0f));
-			model4 = glm::rotate(model4, angle, glm::vec3(0.0f, 0.0f, 1.0f));
 		}
 		else if (rotate2)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, -1.0f));
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, -1.0f));
-			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, 0.0f, -1.0f));
-			model4 = glm::rotate(model4, angle, glm::vec3(0.0f, 0.0f, -1.0f));
 		}
 
 		glBindVertexArray(VAO);
 
-		// Move cubo 1 para a esquerda e para baixo
-		model1 = glm::translate(model1, glm::vec3(negativeX, negativeY, z));
+		// Move cubo 1 para cima
+		model1 = glm::translate(model1, glm::vec3(x, positiveY, z));
 		// Aplica a escala
 		model1 = glm::scale(model1, glm::vec3(scale, scale, scale));
 		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
@@ -201,30 +177,12 @@ int main()
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glDrawArrays(GL_POINTS, 0, 36);
 
-		// Move cubo 2 para a direita e para baixo
-		model2 = glm::translate(model2, glm::vec3(positiveX, negativeY, z));
+		// Move cubo 2 para baixo
+		model2 = glm::translate(model2, glm::vec3(x, negativeY, z));
 		// Aplica a escala
 		model2 = glm::scale(model2, glm::vec3(scale, scale, scale));
 		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glDrawArrays(GL_POINTS, 0, 36);
-
-		// Move cubo 3 para a esquerda e para cima
-		model3 = glm::translate(model3, glm::vec3(negativeX, positiveY, z));
-		// Aplica a escala
-		model3 = glm::scale(model3, glm::vec3(scale, scale, scale));
-		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model3));
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glDrawArrays(GL_POINTS, 0, 36);
-
-		// Move cubo 4 para a direita e para cima
-		model4 = glm::translate(model4, glm::vec3(positiveX, positiveY, z));
-		// Aplica a escala
-		model4 = glm::scale(model4, glm::vec3(scale, scale, scale));
-		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model4));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glDrawArrays(GL_POINTS, 0, 36);
 
@@ -311,12 +269,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		negativeY -= 0.2f;
 	}
 	if (key == GLFW_KEY_A && action == GLFW_PRESS) { // Move no eixo X (para a esquerda)
-		positiveX -= 0.2f;
-		negativeX -= 0.2f;
+		x -= 0.2f;
 	}
 	if (key == GLFW_KEY_D && action == GLFW_PRESS) { // Move no eixo X (para a direita)
-		positiveX += 0.2f;
-		negativeX += 0.2f;
+		x += 0.2f;
 	}
 	if (key == GLFW_KEY_I && action == GLFW_PRESS) { // Move no eixo Z (para frente)
 		z += 0.2f;
