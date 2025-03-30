@@ -13,6 +13,14 @@
 #include <iostream>
 #include <string>
 #include <assert.h>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+#include <cmath>
 
 using namespace std;
 
@@ -33,6 +41,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 // Protótipos das funções
 int setupShader();
 int setupGeometry();
+int loadSimpleOBJ(string filePath, int &nVertices);
+GLuint loadTexture(string filePath, int &width, int &height);
 
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 1000, HEIGHT = 1000;
@@ -100,8 +110,23 @@ int main()
 	GLuint shaderID = setupShader();
 
 	// Gerando um buffer simples, com a geometria de um triângulo
-	GLuint VAO = setupGeometry();
+	int numVertices;
+	GLuint VAO = loadSimpleOBJ("../assets/Modelos3D/Cube.obj", numVertices);
+
+	// Carregando uma textura e armazenando seu id
+//	int imgWidth, imgHeight;
+//	GLuint texID = loadTexture("../assets/textures/pixelWall.png",imgWidth,imgHeight);
+
 	glUseProgram(shaderID);
+
+	// Enviar a informação de qual variável armazenará o buffer da textura
+//	glUniform1i(glGetUniformLocation(shaderID, "texBuff"), 0);
+	//Ativando o primeiro buffer de textura da OpenGL
+//	glActiveTexture(GL_TEXTURE0);
+
+	// Matriz de projeção paralela ortográfica
+	// glm::mat4 projection = glm::ortho(0.0, 800.0, 0.0, 600.0, -1.0, 1.0);
+	// glUniformMatrix4fv(glGetUniformLocation(shaderID, "projection"), 1, GL_FALSE, value_ptr(projection));
 
 	// Cubo 1
 	glm::mat4 model1 = glm::mat4(1); //matriz identidade;
@@ -167,6 +192,7 @@ int main()
 		}
 
 		glBindVertexArray(VAO);
+//		glBindTexture(GL_TEXTURE_2D, texID); // Conectando com o buffer de textura que será usado no draw
 
 		// Move cubo 1 para cima
 		model1 = glm::translate(model1, glm::vec3(x, positiveY, z));
@@ -183,8 +209,8 @@ int main()
 		model2 = glm::scale(model2, glm::vec3(scale, scale, scale));
 		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		glDrawArrays(GL_POINTS, 0, 36);
+		glDrawArrays(GL_TRIANGLES, 0, numVertices);
+		glDrawArrays(GL_POINTS, 0, numVertices);
 
 		glBindVertexArray(0);
 
@@ -330,6 +356,86 @@ int setupShader()
 	return shaderProgram;
 }
 
+int loadSimpleOBJ(string filePath, int &nVertices) {
+    std::vector<glm::vec3> vertices;
+    std::vector<glm::vec2> texCoords;
+    std::vector<glm::vec3> normals;
+    std::vector<GLfloat> vBuffer;
+    glm::vec3 color = glm::vec3(1.0, 0.0, 0.0);
+
+    std::ifstream arqEntrada(filePath.c_str());
+    if (!arqEntrada.is_open()) {
+        std::cerr << "Erro ao tentar ler o arquivo " << filePath << std::endl;
+        return -1;
+    }
+
+    std::string line;
+    while (std::getline(arqEntrada, line)) {
+        std::istringstream ssline(line);
+        std::string word;
+        ssline >> word;
+
+        if (word == "v") {
+            glm::vec3 vertice;
+            ssline >> vertice.x >> vertice.y >> vertice.z;
+            vertices.push_back(vertice);
+        } 
+        else if (word == "vt") {
+            glm::vec2 vt;
+            ssline >> vt.s >> vt.t;
+            texCoords.push_back(vt);
+        } 
+        else if (word == "vn") {
+            glm::vec3 normal;
+            ssline >> normal.x >> normal.y >> normal.z;
+            normals.push_back(normal);
+        } 
+        else if (word == "f") {
+            while (ssline >> word) 
+            {
+                int vi = 0, ti = 0, ni = 0;
+                std::istringstream ss(word);
+                std::string index;
+
+                if (std::getline(ss, index, '/')) vi = !index.empty() ? std::stoi(index) - 1 : 0;
+                if (std::getline(ss, index, '/')) ti = !index.empty() ? std::stoi(index) - 1 : 0;
+                if (std::getline(ss, index)) ni = !index.empty() ? std::stoi(index) - 1 : 0;
+
+                vBuffer.push_back(vertices[vi].x);
+                vBuffer.push_back(vertices[vi].y);
+                vBuffer.push_back(vertices[vi].z);
+                vBuffer.push_back(color.r);
+                vBuffer.push_back(color.g);
+                vBuffer.push_back(color.b);
+            }
+        }
+    }
+
+    arqEntrada.close();
+
+    std::cout << "Gerando o buffer de geometria..." << std::endl;
+    GLuint VBO, VAO;
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, vBuffer.size() * sizeof(GLfloat), vBuffer.data(), GL_STATIC_DRAW);
+    
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
+    
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    nVertices = vBuffer.size() / 6;  // x, y, z, r, g, b (valores atualmente armazenados por vértice)
+
+    return VAO;
+}
+ 
 // Esta função está bastante harcoded - objetivo é criar os buffers que armazenam a 
 // geometria de um triângulo
 // Apenas atributo coordenada nos vértices
@@ -441,4 +547,43 @@ int setupGeometry()
 	glBindVertexArray(0);
 
 	return VAO;
+}
+
+GLuint loadTexture(string filePath, int &width, int &height) {
+	GLuint texID; // id da textura a ser carregada
+
+	// Gera o identificador da textura na memória
+	glGenTextures(1, &texID);
+	glBindTexture(GL_TEXTURE_2D, texID);
+
+	// Ajuste dos parâmetros de wrapping e filtering
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// Carregamento da imagem usando a função stbi_load da biblioteca stb_image
+	int nrChannels;
+
+	unsigned char *data = stbi_load(filePath.c_str(), &width, &height, &nrChannels, 0);
+
+	if (data) {
+		if (nrChannels == 3) // jpg, bmp
+		{
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		}
+		else // assume que é 4 canais png
+		{
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		}
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else {
+		std::cout << "Failed to load texture " << filePath << std::endl;
+	}
+
+	stbi_image_free(data);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	return texID;
 }
