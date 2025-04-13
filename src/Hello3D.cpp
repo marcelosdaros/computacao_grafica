@@ -60,7 +60,7 @@ const GLchar* fragmentShaderSource = "#version 450\n"
 
 float x = 0.0f;							   // os 2 cubos iniciam com x = 0
 float positiveY = 0.4f, negativeY = -0.4f; // positiveY = inicia o eixo Y com +0.4; negativeY = inicia o eixo Y com -0.4
-float z = -3.0f;							   // os 2 cubos iniciam com z = 0
+float z = -3.0f;						   // os 2 cubos iniciam com z = -3
 
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
 float scale = 0.5f;
@@ -78,7 +78,7 @@ int main()
 	// Fazendo o registro da função de callback para a janela GLFW
 	glfwSetKeyCallback(window, key_callback);
 
-	// GLAD: carrega todos os ponteiros d funções da OpenGL
+	// GLAD: carrega todos os ponteiros de funções da OpenGL
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
 		std::cout << "Failed to initialize GLAD" << std::endl;
