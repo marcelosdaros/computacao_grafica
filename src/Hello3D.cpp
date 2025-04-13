@@ -1,4 +1,4 @@
-/* Hello Triangle - */
+/* Hello Triangle - Marcelo Daros*/
 // Configuração do cmake:
 // Ctrl + Shift + P > CMake: Scan for kit
 // Ctrl + Shift + P > CMake: Select a kit
@@ -13,7 +13,6 @@
 #include <iostream>
 #include <string>
 #include <assert.h>
-
 using namespace std;
 
 // GLAD
@@ -37,20 +36,20 @@ int setupGeometry();
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 1000, HEIGHT = 1000;
 
-// Código fonte do Vertex Shader (em GLSL): ainda hardcoded
+// Código fonte do Vertex Shader (em GLSL):
 const GLchar* vertexShaderSource = "#version 450\n"
 "layout (location = 0) in vec3 position;\n"
 "layout (location = 1) in vec3 color;\n"
 "uniform mat4 model;\n"
+"uniform mat4 projection;\n"
 "out vec4 finalColor;\n"
 "void main()\n"
 "{\n"
-//...pode ter mais linhas de código aqui!
-"gl_Position = model * vec4(position, 1.0);\n"
+"gl_Position = projection * model * vec4(position, 1.0);\n"
 "finalColor = vec4(color, 1.0);\n"
 "}\0";
 
-//Códifo fonte do Fragment Shader (em GLSL): ainda hardcoded
+// Código fonte do Fragment Shader (em GLSL):
 const GLchar* fragmentShaderSource = "#version 450\n"
 "in vec4 finalColor;\n"
 "out vec4 color;\n"
@@ -61,7 +60,7 @@ const GLchar* fragmentShaderSource = "#version 450\n"
 
 float x = 0.0f;							   // os 2 cubos iniciam com x = 0
 float positiveY = 0.4f, negativeY = -0.4f; // positiveY = inicia o eixo Y com +0.4; negativeY = inicia o eixo Y com -0.4
-float z = 0.0f;							   // os 2 cubos iniciam com z = 0
+float z = -3.0f;							   // os 2 cubos iniciam com z = 0
 
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
 float scale = 0.5f;
@@ -103,6 +102,16 @@ int main()
 	GLuint VAO = setupGeometry();
 	glUseProgram(shaderID);
 
+	// Gerando projeção, para fazer a profundidade na tela
+	glm::mat4 projection = glm::perspective(
+		glm::radians(45.0f),
+		(float)WIDTH / (float)HEIGHT,
+		0.1f,
+		100.0f
+	);
+	GLuint projLoc = glGetUniformLocation(shaderID, "projection");
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
 	// Cubo 1
 	glm::mat4 model1 = glm::mat4(1); //matriz identidade;
 	// Cubo 2
@@ -132,44 +141,46 @@ int main()
 
 		float angle = (GLfloat)glfwGetTime();
 
-		// Instanciação dos cubos e aplicação de rotação em cada um
+		// Instanciação dos cubos e aplicação de translação, rotação e escala em cada um
 		model1 = glm::mat4(1);
+		model1 = glm::translate(model1, glm::vec3(x, positiveY, z)); // Move cubo 1 para cima
+		
 		model2 = glm::mat4(1);
+		model2 = glm::translate(model2, glm::vec3(x, negativeY, z)); // Move cubo 2 para baixo
+
 		if (rotateUp)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(1.0f, 0.0f, 0.0f));
-			model2 = glm::rotate(model2, angle, glm::vec3(1.0f, 0.0f, 0.0f));
+			model1 = glm::rotate(model1, angle, glm::vec3(-1.0f, 0.0f, 0.0f)); // Rotação no eixo X
+			model2 = glm::rotate(model2, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
 		}
 		else if (rotateDown)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
-			model2 = glm::rotate(model2, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
+			model1 = glm::rotate(model1, angle, glm::vec3(1.0f, 0.0f, 0.0f)); // Rotação no eixo X
+			model2 = glm::rotate(model2, angle, glm::vec3(1.0f, 0.0f, 0.0f));
 		}
 		else if (rotateLeft)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, -1.0f, 0.0f)); // Rotação no eixo Y
+			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, -1.0f, 0.0f));
 		}
 		else if (rotateRight)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, -1.0f, 0.0f));
-			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, -1.0f, 0.0f));
+			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 1.0f, 0.0f)); // Rotação no eixo Y
+			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 1.0f, 0.0f));
 		}
 		else if (rotate1)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, 1.0f));
+			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, 1.0f)); // Rotação no eixo Z
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, 1.0f));
 		}
 		else if (rotate2)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, -1.0f));
+			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, -1.0f)); // Rotação no eixo Z
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, -1.0f));
 		}
 
 		glBindVertexArray(VAO);
 
-		// Move cubo 1 para cima
-		model1 = glm::translate(model1, glm::vec3(x, positiveY, z));
 		// Aplica a escala
 		model1 = glm::scale(model1, glm::vec3(scale, scale, scale));
 		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
@@ -177,8 +188,6 @@ int main()
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glDrawArrays(GL_POINTS, 0, 36);
 
-		// Move cubo 2 para baixo
-		model2 = glm::translate(model2, glm::vec3(x, negativeY, z));
 		// Aplica a escala
 		model2 = glm::scale(model2, glm::vec3(scale, scale, scale));
 		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
@@ -199,8 +208,7 @@ int main()
 }
 
 // Função de callback de teclado - só pode ter uma instância (deve ser estática se
-// estiver dentro de uma classe) - É chamada sempre que uma tecla for pressionada
-// ou solta via GLFW
+// estiver dentro de uma classe) - É chamada sempre que uma tecla for pressionada ou solta via GLFW
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -254,7 +262,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		rotate1 = false;
 		rotate2 = true;
 	}
-	if (key == GLFW_KEY_Z && action == GLFW_PRESS) { // Aumenta a escala
+	if (key == GLFW_KEY_Z && action == GLFW_PRESS) { 
         scale += 0.1f; 
     }
 	if (key == GLFW_KEY_X && action == GLFW_PRESS) { // Diminui a escala e impede valores negativos
@@ -282,10 +290,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	}
 }
 
-//Esta função está basntante hardcoded - objetivo é compilar e "buildar" um programa de
+// Esta função está bastante hardcoded - objetivo é compilar e "buildar" um programa de
 // shader simples e único neste exemplo de código
-// O código fonte do vertex e fragment shader está nos arrays vertexShaderSource e
-// fragmentShader source no iniçio deste arquivo
 // A função retorna o identificador do programa de shader
 int setupShader()
 {
@@ -330,21 +336,16 @@ int setupShader()
 	return shaderProgram;
 }
 
-// Esta função está bastante harcoded - objetivo é criar os buffers que armazenam a 
-// geometria de um triângulo
-// Apenas atributo coordenada nos vértices
-// 1 VBO com as coordenadas, VAO com apenas 1 ponteiro para atributo
-// A função retorna o identificador do VAO
+// Criação de buffers que armazenam a geometria de um triângulo
+// 1 VBO com as coordenadas, VAO com apenas 1 ponteiro para atributo, retornando o identificador do VAO
 int setupGeometry()
 {
-	// Aqui setamos as coordenadas x, y e z de cada  triângulo e as armazenamos de forma
-	// sequencial, já visando mandar para o VBO (Vertex Buffer Objects)
-	// Cada atributo do vértice (coordenada, cores, coordenadas de textura, normal, etc)
-	// Pode ser arazenado em um VBO único ou em VBOs separados
+	// Coordenadas x, y e z de cada  triângulo
+	// Cada atributo do vértice (coordenada, cores, textura, etc) pode ser arazenado em VBO único ou VBOs separados
 	GLfloat vertices[] = {
 
 		//Base do cubo: 2 triângulos
-		//x    y    z    r    g    b
+		// x    y    z    r    g    b
 		-0.5, -0.5, -0.5, 1.0, 1.0, 0.0,
 		-0.5, -0.5,  0.5, 0.0, 1.0, 1.0,
 		 0.5, -0.5, -0.5, 1.0, 0.0, 1.0,
@@ -401,23 +402,22 @@ int setupGeometry()
 
 	GLuint VBO, VAO;
 
-	//Geração do identificador do VBO
+	// Geração do identificador do VBO
 	glGenBuffers(1, &VBO);
 
-	//Faz a conexão (vincula) do buffer como um buffer de array
+	// Faz a conexão (vincula) do buffer como um buffer de array
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-	//Envia os dados do array de floats para o buffer da OpenGl
+	// Envia os dados do array de floats para o buffer da OpenGl
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	//Geração do identificador do VAO (Vertex Array Object)
+	// Geração do identificador do VAO (Vertex Array Object)
 	glGenVertexArrays(1, &VAO);
 
-	// Vincula (bind) o VAO primeiro, e em seguida  conecta e seta o(s) buffer(s) de vértices
-	// e os ponteiros para os atributos 
+	// Vincula (bind) o VAO primeiro, e em seguida conecta e seta o(s) buffer(s) de vértices e ponteiros para os atributos 
 	glBindVertexArray(VAO);
 	
-	//Para cada atributo do vertice, criamos um "AttribPointer" (ponteiro para o atributo), indicando: 
+	// Para cada atributo do vertice, criamos um "AttribPointer" (ponteiro para o atributo), indicando: 
 	// Localização no shader * (a localização dos atributos devem ser correspondentes no layout especificado no vertex shader)
 	// Numero de valores que o atributo tem (por ex, 3 coordenadas xyz) 
 	// Tipo do dado
@@ -425,11 +425,11 @@ int setupGeometry()
 	// Tamanho em bytes 
 	// Deslocamento a partir do byte zero 
 	
-	//Atributo posição (x, y, z)
+	// Atributo posição (x, y, z)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 
-	//Atributo cor (r, g, b)
+	// Atributo cor (r, g, b)
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
 
