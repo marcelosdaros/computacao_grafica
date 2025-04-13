@@ -53,7 +53,7 @@ vector<glm::vec2> tempTexCoords;
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 1000, HEIGHT = 1000;
 
-// Código fonte do Vertex Shader (em GLSL): ainda hardcoded
+// Código fonte do Vertex Shader (em GLSL):
 const GLchar* vertexShaderSource = R"(
 #version 450
 layout (location = 0) in vec3 position;
@@ -61,16 +61,17 @@ layout (location = 1) in vec3 normal;
 layout (location = 2) in vec2 texBuff;
 
 uniform mat4 model;
+uniform mat4 projection;
 out vec2 texCoords;
 
 void main()
 {
-    gl_Position = model * vec4(position, 1.0);
+    gl_Position = projection * model * vec4(position, 1.0);
     texCoords = texBuff;
 }
 )";
 
-//Códifo fonte do Fragment Shader (em GLSL): ainda hardcoded
+//Códifo fonte do Fragment Shader (em GLSL):
 const GLchar* fragmentShaderSource = R"(
 #version 450
 in vec2 texCoords;
@@ -86,7 +87,7 @@ void main()
 
 float x = 0.0f;							   // os 2 cubos iniciam com x = 0
 float positiveY = 0.4f, negativeY = -0.4f; // positiveY = inicia o eixo Y com +0.4; negativeY = inicia o eixo Y com -0.4
-float z = 0.0f;							   // os 2 cubos iniciam com z = 0
+float z = -3.0f;						   // os 2 cubos iniciam com z = -3
 
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
 float scale = 0.5f;
@@ -123,13 +124,22 @@ int main()
 
 	// Compilando e buildando o programa de shader
 	GLuint shaderID = setupShader();
+	glUseProgram(shaderID);
 
-	// Gerando um buffer simples, com a geometria de um triângulo
+	// Gerando projeção, para fazer a profundidade na tela
+	glm::mat4 projection = glm::perspective(
+		glm::radians(45.0f),
+		(float)WIDTH / (float)HEIGHT,
+		0.1f,
+		100.0f
+	);
+	GLuint projLoc = glGetUniformLocation(shaderID, "projection");
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+	// Gerando buffer de VAO e textura
 	int numVertices;
 	GLuint VAO, texID;
-	std::tie(VAO, texID) = loadOBJ("../assets/Modelos3D/Cube.obj", numVertices);
-
-	glUseProgram(shaderID);
+	std::tie(VAO, texID) = loadOBJ("../assets/Modelos3D/Cube.obj", numVertices);	
 
 	// Enviar a variável que armazenará o buffer da textura no fragment shader
 	glUniform1i(glGetUniformLocation(shaderID, "tex_buffer"), 0);
@@ -173,39 +183,39 @@ int main()
 
 		// Instanciação dos cubos e aplicação de rotação em cada um
 		model1 = glm::mat4(1);
-		model1 = glm::translate(model1, glm::vec3(x, positiveY, z));
+		model1 = glm::translate(model1, glm::vec3(x, positiveY, z)); // Move cubo 1 para cima
 
 		model2 = glm::mat4(1);
-		model2 = glm::translate(model2, glm::vec3(x, negativeY, z));
+		model2 = glm::translate(model2, glm::vec3(x, negativeY, z)); // Move cubo 1 para baixo
 
 		if (rotateUp)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(1.0f, 0.0f, 0.0f));
-			model2 = glm::rotate(model2, angle, glm::vec3(1.0f, 0.0f, 0.0f));
+			model1 = glm::rotate(model1, angle, glm::vec3(-1.0f, 0.0f, 0.0f)); // Rotação no eixo X
+			model2 = glm::rotate(model2, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
 		}
 		else if (rotateDown)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
-			model2 = glm::rotate(model2, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
+			model1 = glm::rotate(model1, angle, glm::vec3(1.0f, 0.0f, 0.0f)); // Rotação no eixo X
+			model2 = glm::rotate(model2, angle, glm::vec3(1.0f, 0.0f, 0.0f));
 		}
 		else if (rotateLeft)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, -1.0f, 0.0f)); // Rotação no eixo Y
+			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, -1.0f, 0.0f));
 		}
 		else if (rotateRight)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, -1.0f, 0.0f));
-			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, -1.0f, 0.0f));
+			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 1.0f, 0.0f)); // Rotação no eixo Y
+			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 1.0f, 0.0f));
 		}
 		else if (rotate1)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, 1.0f));
+			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, 1.0f)); // Rotação no eixo Z
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, 1.0f));
 		}
 		else if (rotate2)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, -1.0f));
+			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, -1.0f)); // Rotação no eixo Z
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, -1.0f));
 		}
 
@@ -235,8 +245,7 @@ int main()
 }
 
 // Função de callback de teclado - só pode ter uma instância (deve ser estática se
-// estiver dentro de uma classe) - É chamada sempre que uma tecla for pressionada
-// ou solta via GLFW
+// estiver dentro de uma classe) - É chamada sempre que uma tecla for pressionada ou solta via GLFW
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -467,7 +476,6 @@ GLuint loadTexture(string filePath, int &width, int &height) {
 
 	// Carregamento da imagem usando a função stbi_load da biblioteca stb_image
 	int nrChannels;
-
 	unsigned char *data = stbi_load(filePath.c_str(), &width, &height, &nrChannels, 0);
 
 	if (data) {
