@@ -1,4 +1,4 @@
-/* Hello Triangle - */
+/* Hello Triangle - Marcelo Daros */
 // Configuração do cmake:
 // Ctrl + Shift + P > CMake: Scan for kit
 // Ctrl + Shift + P > CMake: Select a kit
@@ -136,10 +136,14 @@ int main()
 	GLuint projLoc = glGetUniformLocation(shaderID, "projection");
 	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-	// Gerando buffer de VAO e textura
-	int numVertices;
-	GLuint VAO, texID;
-	std::tie(VAO, texID) = loadOBJ("../assets/Modelos3D/Cube.obj", numVertices);	
+	// Gerando o buffer de VAO e textura de cada cubo
+	int numVertices1;
+	GLuint VAO1, texID1;
+	std::tie(VAO1, texID1) = loadOBJ("../assets/Modelos3D/Cube1.obj", numVertices1);
+
+	int numVertices2;
+	GLuint VAO2, texID2;
+	std::tie(VAO2, texID2) = loadOBJ("../assets/Modelos3D/Cube2.obj", numVertices2);
 
 	// Enviar a variável que armazenará o buffer da textura no fragment shader
 	glUniform1i(glGetUniformLocation(shaderID, "tex_buffer"), 0);
@@ -175,11 +179,8 @@ int main()
 
 		float angle = (GLfloat)glfwGetTime();
 
-		glBindVertexArray(VAO);
-
-		// Ativa textura antes de desenhar
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texID);
+		glBindVertexArray(VAO1);
+		glBindVertexArray(VAO2);
 
 		// Instanciação dos cubos e aplicação de rotação em cada um
 		model1 = glm::mat4(1);
@@ -219,18 +220,27 @@ int main()
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, -1.0f));
 		}
 
+		// Ativa textura do cubo 1 antes de desenhar
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texID1);
+
 		// Aplica a escala
 		model1 = glm::scale(model1, glm::vec3(scale, scale, scale));
 		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model1));
-		glDrawArrays(GL_TRIANGLES, 0, numVertices);
-		glDrawArrays(GL_POINTS, 0, numVertices);
+		glDrawArrays(GL_TRIANGLES, 0, numVertices1);
+		glDrawArrays(GL_POINTS, 0, numVertices1);
 
+		// Ativa textura do cubo 2 antes de desenhar
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texID2);
+
+		// Aplica a escala
 		model2 = glm::scale(model2, glm::vec3(scale, scale, scale));
 		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
-		glDrawArrays(GL_TRIANGLES, 0, numVertices);
-		glDrawArrays(GL_POINTS, 0, numVertices);
+		glDrawArrays(GL_TRIANGLES, 0, numVertices2);
+		glDrawArrays(GL_POINTS, 0, numVertices2);
 
 		glBindVertexArray(0);
 
@@ -238,7 +248,8 @@ int main()
 		glfwSwapBuffers(window);
 	}
 	// Pede pra OpenGL desalocar os buffers
-	glDeleteVertexArrays(1, &VAO);
+	glDeleteVertexArrays(1, &VAO1);
+	glDeleteVertexArrays(1, &VAO2);
 	// Finaliza a execução da GLFW, limpando os recursos alocados por ela
 	glfwTerminate();
 	return 0;
@@ -371,6 +382,7 @@ int setupShader()
 	return shaderProgram;
 }
 
+// Função para ler e carregar o .obj, retorna o VAO e sua textura
 std::pair<GLuint, GLuint> loadOBJ(const string& path, int &nVertices) {
     string line;
     vector<glm::vec3> tempPositions, tempNormals;
@@ -382,6 +394,7 @@ std::pair<GLuint, GLuint> loadOBJ(const string& path, int &nVertices) {
         return { -1, -1 };
     }
 
+	// Leitura de cada linha do arquivo .obj
     while (getline(arqEntrada, line)) {
         istringstream iss(line);
         string prefix;
@@ -420,9 +433,11 @@ std::pair<GLuint, GLuint> loadOBJ(const string& path, int &nVertices) {
     int texWidth, texHeight;
 	GLuint texID;
 
+	// Carregamento da textura presente no arquivo mtl
     string textureFile = loadMTL("../assets/Modelos3D/" + mtlFile);
     texID = loadTexture("../assets/textures/" + textureFile, texWidth, texHeight);
 
+	// Vetor para armazenamento dos vértices
     std::vector<GLfloat> vBuffer;
     for (const auto& v : vertices) {
 		vBuffer.push_back(v.position.x);
@@ -498,6 +513,7 @@ GLuint loadTexture(string filePath, int &width, int &height) {
 	return texID;
 }
 
+// Função para carregar o material/textura
 string loadMTL(const string& mtlPath) {
     ifstream file(mtlPath);
     string line, textureFile;
