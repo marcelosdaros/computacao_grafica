@@ -62,26 +62,58 @@ layout (location = 2) in vec2 texBuff;
 
 uniform mat4 model;
 uniform mat4 projection;
+
 out vec2 texCoords;
+out vec3 vNormal;
+out vec3 fragPos;
 
 void main()
 {
     gl_Position = projection * model * vec4(position, 1.0);
+	fragPos = vec3(model * vec4(position, 1.0));
     texCoords = texBuff;
+	// Uso de transpose e inverse para que o vetor normal também seja transformado (escalas e rotações)
+	vNormal = mat3(transpose(inverse(model))) * normal;
 }
 )";
 
-//Códifo fonte do Fragment Shader (em GLSL):
+// Código fonte do Fragment Shader (em GLSL):
 const GLchar* fragmentShaderSource = R"(
 #version 450
 in vec2 texCoords;
+in vec3 vNormal;
+in vec3 fragPos;
 out vec4 FragColor;
 
 uniform sampler2D tex_buffer;
+uniform vec3 lightPos;
+uniform vec3 viewPos;
+uniform float ka;
+uniform float kd;
+uniform float ks;
+uniform float brightness;
 
 void main()
 {
-    FragColor = texture(tex_buffer, texCoords);
+    vec3 texColor = texture(tex_buffer, texCoords).rgb;
+	vec3 normal = normalize(vNormal);
+    vec3 lightDir = normalize(lightPos - fragPos);
+    vec3 viewDir = normalize(viewPos - fragPos);
+    vec3 reflectDir = reflect(-lightDir, normal);
+
+	// Coeficiente de luz ambiente
+	vec3 ambient = ka * texColor;
+
+	// Coeficiente difuso
+	float diff = max(dot(normal, lightDir), 0.0);
+    vec3 diffuse = kd * diff * texColor;
+
+	// Coeficiente especular (luz branca)
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), brightness);
+    vec3 specular = ks * spec * vec3(1.0);
+
+	vec3 result = ambient + diffuse + specular;
+    FragColor = vec4(result, 1.0);
 }
 )";
 
@@ -91,6 +123,7 @@ float z = -3.0f;						   // os 2 cubos iniciam com z = -3
 
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
 float scale = 0.5f;
+float ka = 0.1f, kd = 0.8f, ks = 0.6f, brightness = 60.0f;
 
 // Função MAIN
 int main()
@@ -136,6 +169,10 @@ int main()
 	GLuint projLoc = glGetUniformLocation(shaderID, "projection");
 	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
+	// Posição de visualização
+	glm::vec3 viewPos(0.0f, 0.0f, 3.0f);
+	glUniform3fv(glGetUniformLocation(shaderID, "viewPos"), 1, glm::value_ptr(viewPos));
+
 	// Gerando o buffer de VAO e textura de cada cubo
 	int numVertices1;
 	GLuint VAO1, texID1;
@@ -145,8 +182,17 @@ int main()
 	GLuint VAO2, texID2;
 	std::tie(VAO2, texID2) = loadOBJ("../assets/Modelos3D/Cube2.obj", numVertices2);
 
-	// Enviar a variável que armazenará o buffer da textura no fragment shader
+	// Enviar a variável que armazenará o buffer de textura no fragment shader
 	glUniform1i(glGetUniformLocation(shaderID, "tex_buffer"), 0);
+
+	// Enviar as variáveis que armazenarão os buffers de iluminação (incluindo ka, kd, ks) no fragment shader
+	glUniform3f(glGetUniformLocation(shaderID, "lightPos"), 2.0f, 2.0f, 2.0f);
+	glUniform3fv(glGetUniformLocation(shaderID, "viewPos"), 1, glm::value_ptr(viewPos));
+	glUniform1f(glGetUniformLocation(shaderID, "ka"), ka);
+	glUniform1f(glGetUniformLocation(shaderID, "kd"), kd);
+	glUniform1f(glGetUniformLocation(shaderID, "ks"), ks);
+	glUniform1f(glGetUniformLocation(shaderID, "brightness"), brightness);
+
 	// Ativando o primeiro buffer de textura da OpenGL
 	glActiveTexture(GL_TEXTURE0);
 
@@ -459,12 +505,15 @@ std::pair<GLuint, GLuint> loadOBJ(const string& path, int &nVertices) {
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
 	
+	// Posição (location 0)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 	
+	// Normal (location 1)
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
 	
+	// Textura (location 2)
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(2);
 	
