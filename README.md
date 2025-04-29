@@ -1,3 +1,13 @@
 # Computação Gráfica
+Repositório para entrega das tarefas feitas na disciplina de computação gráfica
 
-Repositório de exemplos de códigos em C++ utilizando OpenGL moderna (3.3+) criado para a Atividade Acadêmica Computação Gráfica do curso de graduação em Ciência da Computação - modalidade híbrida - da Unisinos.
+## Nome
+Marcelo Strack Daros
+
+## Entregas
+* **Desafio M1**: entregue na branch **main**
+* **Desafio M2**: entregue na branch **main**: dois cubos (modelagem poligonal) com translações e rotações.
+* **Desafio M3**: entregue na branch **tarefa_M3**: dois cubos (vindos do .obj) com texturas distintas (vindas do .mtl).
+* **Desafio M4**: entregue na branch **tarefa_M4**: mesmos cubos da tarefa anterior, com iluminação (modelo de Phong).
+* **Desafio M5**: entregue na branch **tarefa_M5**
+* **Desafio M6**: entregue na branch **tarefa_M6**
