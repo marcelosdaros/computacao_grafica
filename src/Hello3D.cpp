@@ -36,6 +36,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 // Protótipos das funções
 int setupShader();
 int setupGeometry();
+void updateCameraPos(GLFWwindow *window);
 std::pair<GLuint, GLuint> loadOBJ(const std::string& path, int &nVertices);
 GLuint loadTexture(string filePath, int &width, int &height);
 string loadMTL(const string& mtlPath);
@@ -60,8 +61,9 @@ layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
 layout (location = 2) in vec2 texBuff;
 
-uniform mat4 model;
 uniform mat4 projection;
+uniform mat4 view;
+uniform mat4 model;
 
 out vec2 texCoords;
 out vec3 vNormal;
@@ -69,7 +71,7 @@ out vec3 fragPos;
 
 void main()
 {
-    gl_Position = projection * model * vec4(position, 1.0);
+    gl_Position = projection * view * model * vec4(position, 1.0);
 	fragPos = vec3(model * vec4(position, 1.0));
     texCoords = texBuff;
 	// Uso de transpose e inverse para que o vetor normal também seja transformado (escalas e rotações)
@@ -125,6 +127,15 @@ bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rota
 float scale = 0.5f;
 float ka = 0.1f, kd = 0.8f, ks = 0.6f, brightness = 60.0f;
 
+// Posição e orientação inicial da camera
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+float yaw = -90.0f;
+float pitch = 0.0f;
+
 // Função MAIN
 int main()
 {
@@ -138,7 +149,7 @@ int main()
 	// Fazendo o registro da função de callback para a janela GLFW
 	glfwSetKeyCallback(window, key_callback);
 
-	// GLAD: carrega todos os ponteiros d funções da OpenGL
+	// GLAD: carrega todos os ponteiros de funções da OpenGL
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
 		std::cout << "Failed to initialize GLAD" << std::endl;
@@ -159,6 +170,24 @@ int main()
 	GLuint shaderID = setupShader();
 	glUseProgram(shaderID);
 
+	// Cubo 1
+	glm::mat4 model1 = glm::mat4(1); //matriz identidade;
+	// Cubo 2
+	glm::mat4 model2 = glm::mat4(1); //matriz identidade;
+
+	model1 = glm::rotate(model1, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	model2 = glm::rotate(model2, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+	// Posição de visualização para cálculo da iluminaçao
+	glm::vec3 viewPos(0.0f, 0.0f, 3.0f);
+	glUniform3fv(glGetUniformLocation(shaderID, "viewPos"), 1, glm::value_ptr(viewPos));
+
+	// Camera
+	glm::mat4 view;
+	view = glm::lookAt(glm::vec3(0.0f, 0.0f, 3.0f), // Posição (ponto)
+					   glm::vec3(0.0f, 0.0f, 0.0f), // Target
+					   glm::vec3(0.0f, 1.0f, 0.0f)); // Up (vetor)
+
 	// Gerando projeção, para fazer a profundidade na tela
 	glm::mat4 projection = glm::perspective(
 		glm::radians(45.0f),
@@ -166,12 +195,15 @@ int main()
 		0.1f,
 		100.0f
 	);
-	GLuint projLoc = glGetUniformLocation(shaderID, "projection");
-	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-	// Posição de visualização
-	glm::vec3 viewPos(0.0f, 0.0f, 3.0f);
-	glUniform3fv(glGetUniformLocation(shaderID, "viewPos"), 1, glm::value_ptr(viewPos));
+	GLuint projLoc = glGetUniformLocation(shaderID, "projection");
+	GLint viewLoc = glGetUniformLocation(shaderID, "view");
+	GLint modelLoc = glGetUniformLocation(shaderID, "model");
+
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model1));
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
 
 	// Gerando o buffer de VAO e textura de cada cubo
 	int numVertices1;
@@ -195,18 +227,6 @@ int main()
 
 	// Ativando o primeiro buffer de textura da OpenGL
 	glActiveTexture(GL_TEXTURE0);
-
-	// Cubo 1
-	glm::mat4 model1 = glm::mat4(1); //matriz identidade;
-	// Cubo 2
-	glm::mat4 model2 = glm::mat4(1); //matriz identidade;
-	GLint modelLoc = glGetUniformLocation(shaderID, "model");
-
-	model1 = glm::rotate(model1, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model1));
-
-	model2 = glm::rotate(model2, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -234,6 +254,31 @@ int main()
 
 		model2 = glm::mat4(1);
 		model2 = glm::translate(model2, glm::vec3(x, negativeY, z)); // Move cubo 1 para baixo
+
+		// Movimento suave de câmera
+		float currentFrame = glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
+		// Atualiza o vetor de direção da câmera com base em pitch/yaw
+		glm::vec3 front;
+		front.x = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
+		front.y = sin(glm::radians(pitch));
+		front.z = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
+		cameraFront = glm::normalize(front);
+
+		updateCameraPos(window);
+		// Atualiza a view com a nova posição
+		glm::mat4 view = glm::lookAt(
+			cameraPos,
+			cameraPos + cameraFront,
+			cameraUp
+		);
+
+		// Enviar view atualizada para o shader
+		glUniformMatrix4fv(glGetUniformLocation(shaderID, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		// Atualiza a posição da câmera (viewPos) usada no cálculo de iluminação
+		glUniform3fv(glGetUniformLocation(shaderID, "viewPos"), 1, glm::value_ptr(cameraPos));
 
 		if (rotateUp)
 		{
@@ -275,7 +320,6 @@ int main()
 		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model1));
 		glDrawArrays(GL_TRIANGLES, 0, numVertices1);
-		glDrawArrays(GL_POINTS, 0, numVertices1);
 
 		// Ativa textura do cubo 2 antes de desenhar
 		glActiveTexture(GL_TEXTURE0);
@@ -286,7 +330,6 @@ int main()
 		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
 		glDrawArrays(GL_TRIANGLES, 0, numVertices2);
-		glDrawArrays(GL_POINTS, 0, numVertices2);
 
 		glBindVertexArray(0);
 
@@ -362,26 +405,25 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (key == GLFW_KEY_X && action == GLFW_PRESS) { // Diminui a escala e impede valores negativos
         scale = glm::max(0.1f, scale - 0.1f); 
     }
-	if (key == GLFW_KEY_W && action == GLFW_PRESS) { // Move no eixo Y (para cima)
-		positiveY += 0.2f;
-		negativeY += 0.2f;
-	}
-	if (key == GLFW_KEY_S && action == GLFW_PRESS) { // Move no eixo Y (para baixo)
-		positiveY -= 0.2f;
-		negativeY -= 0.2f;
-	}
-	if (key == GLFW_KEY_A && action == GLFW_PRESS) { // Move no eixo X (para a esquerda)
-		x -= 0.2f;
-	}
-	if (key == GLFW_KEY_D && action == GLFW_PRESS) { // Move no eixo X (para a direita)
-		x += 0.2f;
-	}
 	if (key == GLFW_KEY_I && action == GLFW_PRESS) { // Move no eixo Z (para frente)
 		z += 0.2f;
 	}
 	if (key == GLFW_KEY_J && action == GLFW_PRESS) { // Move no eixo Z (para trás)
 		z -= 0.2f;
 	}
+}
+
+void updateCameraPos(GLFWwindow *window)
+{
+	float cameraSpeed = 2.5f * deltaTime;
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	cameraPos += cameraSpeed * cameraFront;
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+	cameraPos -= cameraSpeed * cameraFront;
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 }
 
 // A função retorna o identificador do programa de shader
