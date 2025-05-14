@@ -21,22 +21,22 @@ using namespace std;
 
 // GLAD
 #include <glad/glad.h>
-
 // GLFW
 #include <GLFW/glfw3.h>
-
-//GLM
+// GLM
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-// Protótipo da função de callback de teclado
+#include "Camera.h"
+
+// Protótipo das funções de callback de teclado e cursor
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
 // Protótipos das funções
 int setupShader();
 int setupGeometry();
-void updateCameraPos(GLFWwindow *window);
 std::pair<GLuint, GLuint> loadOBJ(const std::string& path, int &nVertices);
 GLuint loadTexture(string filePath, int &width, int &height);
 string loadMTL(const string& mtlPath);
@@ -127,14 +127,19 @@ bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rota
 float scale = 0.5f;
 float ka = 0.1f, kd = 0.8f, ks = 0.6f, brightness = 60.0f;
 
-// Posição e orientação inicial da camera
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+// Variaveis para controle de movimentação da camera
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
-float yaw = -90.0f;
-float pitch = 0.0f;
+
+// Variaveis para controle de movimentação do mouse
+float lastX = WIDTH / 2.0f;
+float lastY = HEIGHT / 2.0f;
+bool firstMouse = true;
+
+// Camera global
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f),
+				glm::vec3(0.0f, 1.0f, 0.0f),
+				-90.0f, 0.0f);
 
 // Função MAIN
 int main()
@@ -142,12 +147,14 @@ int main()
 	// Inicialização da GLFW
 	glfwInit();
 
-	// Criação da janela GLFW
+	// Criação da janela GLFW e cursor escondido
 	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Ola 3D -- Marcelo!", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	// Fazendo o registro da função de callback para a janela GLFW
 	glfwSetKeyCallback(window, key_callback);
+	glfwSetCursorPosCallback(window, mouse_callback);
 
 	// GLAD: carrega todos os ponteiros de funções da OpenGL
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -178,16 +185,6 @@ int main()
 	model1 = glm::rotate(model1, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	model2 = glm::rotate(model2, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-	// Posição de visualização para cálculo da iluminaçao
-	glm::vec3 viewPos(0.0f, 0.0f, 3.0f);
-	glUniform3fv(glGetUniformLocation(shaderID, "viewPos"), 1, glm::value_ptr(viewPos));
-
-	// Camera
-	glm::mat4 view;
-	view = glm::lookAt(glm::vec3(0.0f, 0.0f, 3.0f), // Posição (ponto)
-					   glm::vec3(0.0f, 0.0f, 0.0f), // Target
-					   glm::vec3(0.0f, 1.0f, 0.0f)); // Up (vetor)
-
 	// Gerando projeção, para fazer a profundidade na tela
 	glm::mat4 projection = glm::perspective(
 		glm::radians(45.0f),
@@ -201,9 +198,6 @@ int main()
 	GLint modelLoc = glGetUniformLocation(shaderID, "model");
 
 	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model1));
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
 
 	// Gerando o buffer de VAO e textura de cada cubo
 	int numVertices1;
@@ -219,7 +213,6 @@ int main()
 
 	// Enviar as variáveis que armazenarão os buffers de iluminação (incluindo ka, kd, ks) no fragment shader
 	glUniform3f(glGetUniformLocation(shaderID, "lightPos"), 2.0f, 2.0f, 2.0f);
-	glUniform3fv(glGetUniformLocation(shaderID, "viewPos"), 1, glm::value_ptr(viewPos));
 	glUniform1f(glGetUniformLocation(shaderID, "ka"), ka);
 	glUniform1f(glGetUniformLocation(shaderID, "kd"), kd);
 	glUniform1f(glGetUniformLocation(shaderID, "ks"), ks);
@@ -227,26 +220,22 @@ int main()
 
 	// Ativando o primeiro buffer de textura da OpenGL
 	glActiveTexture(GL_TEXTURE0);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-	glEnable(GL_DEPTH_TEST);
+	//glEnable(GL_DEPTH_TEST);
 
 	// Loop da aplicação - "game loop"
 	while (!glfwWindowShouldClose(window))
 	{
-		// Verifica se houveram eventos de input (key pressed, mouse moved etc.) e chama as funções de callback correspondentes
-		glfwPollEvents();
-
-		// Limpa o buffer de cor
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f); //cor de fundo
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		// Movimento suave de câmera
+		float currentFrame = glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
 
 		glLineWidth(10);
 		glPointSize(20);
 
 		float angle = (GLfloat)glfwGetTime();
-
-		glBindVertexArray(VAO1);
-		glBindVertexArray(VAO2);
 
 		// Instanciação dos cubos e aplicação de rotação em cada um
 		model1 = glm::mat4(1);
@@ -255,30 +244,19 @@ int main()
 		model2 = glm::mat4(1);
 		model2 = glm::translate(model2, glm::vec3(x, negativeY, z)); // Move cubo 1 para baixo
 
-		// Movimento suave de câmera
-		float currentFrame = glfwGetTime();
-		deltaTime = currentFrame - lastFrame;
-		lastFrame = currentFrame;
+		// Verifica se houveram eventos de input e chama as funções de callback correspondentes
+		glfwPollEvents();
+		camera.updateCameraPos(window, deltaTime);
 
-		// Atualiza o vetor de direção da câmera com base em pitch/yaw
-		glm::vec3 front;
-		front.x = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
-		front.y = sin(glm::radians(pitch));
-		front.z = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
-		cameraFront = glm::normalize(front);
-
-		updateCameraPos(window);
-		// Atualiza a view com a nova posição
-		glm::mat4 view = glm::lookAt(
-			cameraPos,
-			cameraPos + cameraFront,
-			cameraUp
-		);
-
+		glm::mat4 view = camera.GetViewMatrix();
 		// Enviar view atualizada para o shader
-		glUniformMatrix4fv(glGetUniformLocation(shaderID, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		// Atualiza a posição da câmera (viewPos) usada no cálculo de iluminação
-		glUniform3fv(glGetUniformLocation(shaderID, "viewPos"), 1, glm::value_ptr(cameraPos));
+		glUniform3fv(glGetUniformLocation(shaderID, "viewPos"), 1, glm::value_ptr(camera.cameraPos));
+
+		// Limpa o buffer de cor
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f); //cor de fundo
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		if (rotateUp)
 		{
@@ -313,6 +291,7 @@ int main()
 
 		// Ativa textura do cubo 1 antes de desenhar
 		glActiveTexture(GL_TEXTURE0);
+		glBindVertexArray(VAO1);
 		glBindTexture(GL_TEXTURE_2D, texID1);
 
 		// Aplica a escala
@@ -323,6 +302,7 @@ int main()
 
 		// Ativa textura do cubo 2 antes de desenhar
 		glActiveTexture(GL_TEXTURE0);
+		glBindVertexArray(VAO2);
 		glBindTexture(GL_TEXTURE_2D, texID2);
 
 		// Aplica a escala
@@ -413,17 +393,21 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	}
 }
 
-void updateCameraPos(GLFWwindow *window)
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-	float cameraSpeed = 2.5f * deltaTime;
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-	cameraPos += cameraSpeed * cameraFront;
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-	cameraPos -= cameraSpeed * cameraFront;
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-	cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-	cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+    lastX = xpos;
+    lastY = ypos;
+
+    camera.updateMouseMovement(xoffset, yoffset);
 }
 
 // A função retorna o identificador do programa de shader
