@@ -12,11 +12,9 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <cmath>
-
 using namespace std;
 
 // GLAD
@@ -33,6 +31,7 @@ using namespace std;
 // Protótipo das funções de callback de teclado e cursor
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 // Protótipos das funções
 int setupShader();
@@ -40,19 +39,6 @@ int setupGeometry();
 std::pair<GLuint, GLuint> loadOBJ(const std::string& path, int &nVertices);
 GLuint loadTexture(string filePath, int &width, int &height);
 string loadMTL(const string& mtlPath);
-
-struct Vertex {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec2 texCoords;
-};
-
-vector<Vertex> vertices;
-vector<unsigned int> indices;
-vector<glm::vec2> tempTexCoords;
-
-// Dimensões da janela (pode ser alterado em tempo de execução)
-const GLuint WIDTH = 1000, HEIGHT = 1000;
 
 // Código fonte do Vertex Shader (em GLSL):
 const GLchar* vertexShaderSource = R"(
@@ -119,10 +105,22 @@ void main()
 }
 )";
 
+struct Vertex {
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec2 texCoords;
+};
+
+vector<Vertex> vertices;
+vector<unsigned int> indices;
+vector<glm::vec2> tempTexCoords;
+
+// Dimensões da janela (pode ser alterado em tempo de execução)
+const GLuint WIDTH = 1000, HEIGHT = 1000;
+
 float x = 0.0f;							   // os 2 cubos iniciam com x = 0
 float positiveY = 0.4f, negativeY = -0.4f; // positiveY = inicia o eixo Y com +0.4; negativeY = inicia o eixo Y com -0.4
-float z = -3.0f;						   // os 2 cubos iniciam com z = -3
-
+float z = 0.0f;						       // os 2 cubos iniciam com z = -3
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
 float scale = 0.5f;
 float ka = 0.1f, kd = 0.8f, ks = 0.6f, brightness = 60.0f;
@@ -137,15 +135,16 @@ float lastY = HEIGHT / 2.0f;
 bool firstMouse = true;
 
 // Camera global
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f),
-				glm::vec3(0.0f, 1.0f, 0.0f),
-				-90.0f, 0.0f);
+Camera camera(
+    glm::vec3(0.0f, 0.0f, 3.0f),     // posição da câmera: afastada no eixo Z
+    glm::vec3(0.0f, 1.0f, 0.0f),
+    -90.0f, 0.0f                     // yaw, pitch (olhando para -Z)
+);
 
 // Função MAIN
 int main()
 {
-	// Inicialização da GLFW
-	glfwInit();
+	glfwInit(); // Inicialização da GLFW
 
 	// Criação da janela GLFW e cursor escondido
 	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Ola 3D -- Marcelo!", nullptr, nullptr);
@@ -155,6 +154,7 @@ int main()
 	// Fazendo o registro da função de callback para a janela GLFW
 	glfwSetKeyCallback(window, key_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
+	glfwSetScrollCallback(window, scroll_callback);
 
 	// GLAD: carrega todos os ponteiros de funções da OpenGL
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -182,22 +182,12 @@ int main()
 	// Cubo 2
 	glm::mat4 model2 = glm::mat4(1); //matriz identidade;
 
-	model1 = glm::rotate(model1, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	model2 = glm::rotate(model2, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
-	// Gerando projeção, para fazer a profundidade na tela
-	glm::mat4 projection = glm::perspective(
-		glm::radians(45.0f),
-		(float)WIDTH / (float)HEIGHT,
-		0.1f,
-		100.0f
-	);
+	model1 = glm::rotate(model1, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	model2 = glm::rotate(model2, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
 	GLuint projLoc = glGetUniformLocation(shaderID, "projection");
 	GLint viewLoc = glGetUniformLocation(shaderID, "view");
 	GLint modelLoc = glGetUniformLocation(shaderID, "model");
-
-	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
 	// Gerando o buffer de VAO e textura de cada cubo
 	int numVertices1;
@@ -212,7 +202,7 @@ int main()
 	glUniform1i(glGetUniformLocation(shaderID, "tex_buffer"), 0);
 
 	// Enviar as variáveis que armazenarão os buffers de iluminação (incluindo ka, kd, ks) no fragment shader
-	glUniform3f(glGetUniformLocation(shaderID, "lightPos"), 2.0f, 2.0f, 2.0f);
+	glUniform3f(glGetUniformLocation(shaderID, "lightPos"), 1.0f, 1.0f, 1.0f);
 	glUniform1f(glGetUniformLocation(shaderID, "ka"), ka);
 	glUniform1f(glGetUniformLocation(shaderID, "kd"), kd);
 	glUniform1f(glGetUniformLocation(shaderID, "ks"), ks);
@@ -220,9 +210,7 @@ int main()
 
 	// Ativando o primeiro buffer de textura da OpenGL
 	glActiveTexture(GL_TEXTURE0);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-	//glEnable(GL_DEPTH_TEST);
+	glEnable(GL_DEPTH_TEST);
 
 	// Loop da aplicação - "game loop"
 	while (!glfwWindowShouldClose(window))
@@ -232,31 +220,36 @@ int main()
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-		glLineWidth(10);
-		glPointSize(20);
-
-		float angle = (GLfloat)glfwGetTime();
-
-		// Instanciação dos cubos e aplicação de rotação em cada um
+		// Instanciação dos cubos
 		model1 = glm::mat4(1);
 		model1 = glm::translate(model1, glm::vec3(x, positiveY, z)); // Move cubo 1 para cima
-
 		model2 = glm::mat4(1);
 		model2 = glm::translate(model2, glm::vec3(x, negativeY, z)); // Move cubo 1 para baixo
 
-		// Verifica se houveram eventos de input e chama as funções de callback correspondentes
+		// Verifica se houveram eventos de input e chama as funções de callback
 		glfwPollEvents();
 		camera.updateCameraPos(window, deltaTime);
-
+		
 		glm::mat4 view = camera.GetViewMatrix();
-		// Enviar view atualizada para o shader
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-		// Atualiza a posição da câmera (viewPos) usada no cálculo de iluminação
-		glUniform3fv(glGetUniformLocation(shaderID, "viewPos"), 1, glm::value_ptr(camera.cameraPos));
+		glUniformMatrix4fv(glGetUniformLocation(shaderID, "view"), 1, GL_FALSE, glm::value_ptr(view)); // Enviar view atualizada para o shader
+		glUniform3fv(glGetUniformLocation(shaderID, "viewPos"), 1, glm::value_ptr(camera.cameraPos)); // Atualiza a viewPos usada no cálculo de iluminação
+
+		// Gerando projeção, para fazer a profundidade na tela
+		glm::mat4 projection = glm::perspective(
+			glm::radians(camera.fov),
+			(float)WIDTH / (float)HEIGHT,
+			0.1f,
+			100.0f
+		);
+		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
 		// Limpa o buffer de cor
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f); //cor de fundo
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // cor de fundo
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glLineWidth(10);
+		glPointSize(20);
+		float angle = (GLfloat)glfwGetTime();
 
 		if (rotateUp)
 		{
@@ -324,8 +317,7 @@ int main()
 	return 0;
 }
 
-// Função de callback de teclado - só pode ter uma instância (deve ser estática se
-// estiver dentro de uma classe) - É chamada sempre que uma tecla for pressionada ou solta via GLFW
+// Função de callback de teclado
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -393,6 +385,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	}
 }
 
+// Função de callback do mouse
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
     if (firstMouse)
@@ -410,7 +403,13 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     camera.updateMouseMovement(xoffset, yoffset);
 }
 
-// A função retorna o identificador do programa de shader
+// Função de callback do scroll
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    camera.updateMouseScroll(static_cast<float>(yoffset));
+}
+
+// Retorna o identificador do programa de shader
 int setupShader()
 {
 	// Vertex shader
@@ -547,7 +546,6 @@ std::pair<GLuint, GLuint> loadOBJ(const string& path, int &nVertices) {
 	glBindVertexArray(0);
 	
 	nVertices = vBuffer.size() / 8; // x, y, z, nx, ny, nz, u, v
-
 	return { VAO, texID };
 }
 

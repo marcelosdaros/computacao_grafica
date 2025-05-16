@@ -6,7 +6,6 @@
 
 class Camera {
 public:
-    // Atributos públicos
     glm::vec3 cameraPos;
     glm::vec3 cameraFront;
     glm::vec3 cameraUp;
@@ -17,12 +16,13 @@ public:
     float pitch;
     float movementSpeed;
     float mouseSensitivity;
+    float fov = 45.0f;
 
     // Construtor
-    Camera(glm::vec3 position, glm::vec3 up, float initYaw, float initPitch)
-        : cameraFront(glm::vec3(0.0f, 0.0f, -1.0f)),
-          movementSpeed(2.5f),
-          mouseSensitivity(0.1f)
+    Camera(glm::vec3 position, glm::vec3 up, float initYaw, float initPitch):
+        cameraFront(glm::vec3(0.0f, 0.0f, -1.0f)),
+        movementSpeed(2.5f),
+        mouseSensitivity(0.1f)
     {
         cameraPos = position;
         worldUp = up;
@@ -31,7 +31,7 @@ public:
         updateCameraVectors();
     }
 
-    // Retorna a matriz de visualização (view matrix)
+    // Retorna a matriz de visualização
     glm::mat4 GetViewMatrix() {
         return glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
     }
@@ -44,9 +44,9 @@ public:
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 	        cameraPos -= cameraSpeed * cameraFront;
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-            cameraPos -= cameraSpeed * right;
+            cameraPos -= right * cameraSpeed;
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-            cameraPos += cameraSpeed * right;
+            cameraPos += right * cameraSpeed;
     }
 
     // Movimento com mouse (yaw e pitch)
@@ -63,8 +63,16 @@ public:
             if (pitch < -89.0f)
                 pitch = -89.0f;
         }
-
         updateCameraVectors();
+    }
+
+    void updateMouseScroll(float yoffset) {
+        if (fov >= 1.0f && fov <= 45.0f)
+            fov -= yoffset;
+        if (fov < 1.0f)
+            fov = 1.0f;
+        if (fov > 45.0f)
+            fov = 45.0f;
     }
 
 private:
@@ -73,7 +81,7 @@ private:
         glm::vec3 front;
         front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
         front.y = sin(glm::radians(pitch));
-        front.z = cos(glm::radians(yaw)) * sin(glm::radians(pitch));
+        front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
         cameraFront = glm::normalize(front);
 
         // Recalcula right e Up
