@@ -310,11 +310,11 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		if (cubo1selecionado) cubo1z -= 0.2f;
 		if (cubo2selecionado) cubo2z -= 0.2f;
 	}
-	if (key == GLFW_KEY_Q && action == GLFW_PRESS) { // Seleciona cubo 1
+	if (key == GLFW_KEY_Q && action == GLFW_PRESS) { // Seleciona cubo 2
 		cubo1selecionado = false;
 		cubo2selecionado = true;
 	}
-	if (key == GLFW_KEY_E && action == GLFW_PRESS) { // Seleciona cubo 2
+	if (key == GLFW_KEY_E && action == GLFW_PRESS) { // Seleciona cubo 1
 		cubo1selecionado = true;
 		cubo2selecionado = false;
 	}
@@ -447,6 +447,5 @@ GLuint loadOBJ(const string& path, int &nVertices) {
 	glBindVertexArray(0);
 	
 	nVertices = vBuffer.size() / 8; // x, y, z, nx, ny, nz, u, v
-
 	return VAO;
 }
