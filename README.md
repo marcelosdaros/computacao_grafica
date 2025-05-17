@@ -4,7 +4,7 @@
 Nome: Marcelo Strack Daros
 
 ## Especificações:
-* Para ler o .obj, a função loadOBJ foi implementada
+* Para ler o .obj, a função loadOBJ foi implementada no Hello3D.cpp
 * Foi utilizado um struct para armazenamento das propriedades de cada cubo, e vector para armazenamento de dois cubos
 * Setas do teclado e teclas 1 e 2: rotações
 * Teclas WASD e IJ: translações
