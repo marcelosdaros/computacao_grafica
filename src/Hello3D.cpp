@@ -13,18 +13,12 @@
 #include <string>
 #include <vector>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-#include <cmath>
-
 using namespace std;
 
 // GLAD
 #include <glad/glad.h>
-
 // GLFW
 #include <GLFW/glfw3.h>
-
 //GLM
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -36,19 +30,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 // Protótipos das funções
 int setupShader();
 int setupGeometry();
-std::pair<GLuint, GLuint> loadOBJ(const std::string& path, int &nVertices);
-GLuint loadTexture(string filePath, int &width, int &height);
-string loadMTL(const string& mtlPath);
-
-struct Vertex {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec2 texCoords;
-};
-
-vector<Vertex> vertices;
-vector<unsigned int> indices;
-vector<glm::vec2> tempTexCoords;
+GLuint loadOBJ(const std::string& path, int &nVertices);
 
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 1000, HEIGHT = 1000;
@@ -71,7 +53,7 @@ void main()
 }
 )";
 
-//Códifo fonte do Fragment Shader (em GLSL):
+// Código fonte do Fragment Shader (em GLSL):
 const GLchar* fragmentShaderSource = R"(
 #version 450
 in vec2 texCoords;
@@ -85,12 +67,29 @@ void main()
 }
 )";
 
-float x = 0.0f;							   // os 2 cubos iniciam com x = 0
-float positiveY = 0.4f, negativeY = -0.4f; // positiveY = inicia o eixo Y com +0.4; negativeY = inicia o eixo Y com -0.4
-float z = -3.0f;						   // os 2 cubos iniciam com z = -3
-
+float cubo1x = 0.3f, cubo2x = -0.3f; // positiveX = inicia o eixo X com +0.4; negativeX = inicia o eixo X com -0.4
+float cubo1y = 0.0f, cubo2y = 0.0f;  // os 2 cubos iniciam com y = 0
+float cubo1z = -2.0f, cubo2z = -2.0f; // os 2 cubos iniciam com z = -3
+float scaleCubo1 = 0.5f, scaleCubo2 = 0.5f;
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
-float scale = 0.5f;
+bool cubo1selecionado=false, cubo2selecionado=true;
+
+// struct para os cubos
+struct Cubo {
+	GLuint VAO;
+	int numVertices;
+	glm::vec3 position;
+};
+
+// struct para armazenamento de cada vértice do .obj
+struct Vertex {
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec2 texCoords;
+};
+vector<Vertex> vertices;
+vector<unsigned int> indices;
+vector<glm::vec2> tempTexCoords;
 
 // Função MAIN
 int main()
@@ -136,31 +135,26 @@ int main()
 	GLuint projLoc = glGetUniformLocation(shaderID, "projection");
 	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-	// Gerando o buffer de VAO e textura de cada cubo
-	int numVertices1;
-	GLuint VAO1, texID1;
-	std::tie(VAO1, texID1) = loadOBJ("../assets/Modelos3D/Cube1.obj", numVertices1);
-
-	int numVertices2;
-	GLuint VAO2, texID2;
-	std::tie(VAO2, texID2) = loadOBJ("../assets/Modelos3D/Cube2.obj", numVertices2);
-
-	// Enviar a variável que armazenará o buffer da textura no fragment shader
-	glUniform1i(glGetUniformLocation(shaderID, "tex_buffer"), 0);
-	// Ativando o primeiro buffer de textura da OpenGL
-	glActiveTexture(GL_TEXTURE0);
+	std::vector<Cubo> cubos;
 
 	// Cubo 1
-	glm::mat4 model1 = glm::mat4(1); //matriz identidade;
+	Cubo cubo1;
+	cubo1.VAO = loadOBJ("../assets/Modelos3D/Cube.obj", cubo1.numVertices);
+	cubo1.position = glm::vec3(cubo1x, cubo1y, cubo1z);
+	cubos.push_back(cubo1);
+
 	// Cubo 2
-	glm::mat4 model2 = glm::mat4(1); //matriz identidade;
+	Cubo cubo2;
+	cubo2.VAO = loadOBJ("../assets/Modelos3D/Cube.obj", cubo2.numVertices);
+	cubo2.position = glm::vec3(cubo2x, cubo2y, cubo2z);
+	cubos.push_back(cubo2);
+
 	GLint modelLoc = glGetUniformLocation(shaderID, "model");
-
-	model1 = glm::rotate(model1, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model1));
-
-	model2 = glm::rotate(model2, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
+	for (auto& cubo : cubos) {
+		glm::mat4 model = glm::mat4(1.0f); // matriz identidade
+		model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)); // aplica rotação
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); // envia ao shader
+	}
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -176,71 +170,44 @@ int main()
 
 		glLineWidth(10);
 		glPointSize(20);
-
 		float angle = (GLfloat)glfwGetTime();
 
-		glBindVertexArray(VAO1);
-		glBindVertexArray(VAO2);
+		for (auto& cubo : cubos) {
+			for (size_t i = 0; i < cubos.size(); ++i) {
+			    if (i == 0)
+					cubos[i].position = glm::vec3(cubo1x, cubo1y, cubo1z); // posição do cubo1
+				else if (i == 1)
+					cubos[i].position = glm::vec3(cubo2x, cubo2y, cubo2z); // posição do cubo2
+			}	
 
-		// Instanciação dos cubos e aplicação de rotação em cada um
-		model1 = glm::mat4(1);
-		model1 = glm::translate(model1, glm::vec3(x, positiveY, z)); // Move cubo 1 para cima
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, cubo.position);
 
-		model2 = glm::mat4(1);
-		model2 = glm::translate(model2, glm::vec3(x, negativeY, z)); // Move cubo 1 para baixo
+			if (rotateUp)
+				model = glm::rotate(model, angle, glm::vec3(-1.0f, 0.0f, 0.0f)); // Rotação no eixo X
+			else if (rotateDown)
+				model = glm::rotate(model, angle, glm::vec3(1.0f, 0.0f, 0.0f)); // Rotação no eixo X
+			else if (rotateLeft)
+				model = glm::rotate(model, angle, glm::vec3(0.0f, -1.0f, 0.0f)); // Rotação no eixo Y
+			else if (rotateRight)
+				model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f)); // Rotação no eixo Y
+			else if (rotate1)
+				model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f)); // Rotação no eixo Z
+			else if (rotate2)
+				model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, -1.0f)); // Rotação no eixo Z
 
-		if (rotateUp)
-		{
-			model1 = glm::rotate(model1, angle, glm::vec3(-1.0f, 0.0f, 0.0f)); // Rotação no eixo X
-			model2 = glm::rotate(model2, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
+			for (size_t i = 0; i < cubos.size(); ++i) {
+			    if (i == 0)
+					model = glm::scale(model, glm::vec3(scaleCubo1, scaleCubo1, scaleCubo1)); // escala do cubo1
+				else if (i == 1)
+					model = glm::scale(model, glm::vec3(scaleCubo2, scaleCubo2, scaleCubo2)); // escala do cubo2
+			}	
+
+			glBindVertexArray(cubo.VAO);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+			glDrawArrays(GL_TRIANGLES, 0, cubo.numVertices);
+			glDrawArrays(GL_POINTS, 0, cubo.numVertices);
 		}
-		else if (rotateDown)
-		{
-			model1 = glm::rotate(model1, angle, glm::vec3(1.0f, 0.0f, 0.0f)); // Rotação no eixo X
-			model2 = glm::rotate(model2, angle, glm::vec3(1.0f, 0.0f, 0.0f));
-		}
-		else if (rotateLeft)
-		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, -1.0f, 0.0f)); // Rotação no eixo Y
-			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, -1.0f, 0.0f));
-		}
-		else if (rotateRight)
-		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 1.0f, 0.0f)); // Rotação no eixo Y
-			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-		}
-		else if (rotate1)
-		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, 1.0f)); // Rotação no eixo Z
-			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, 1.0f));
-		}
-		else if (rotate2)
-		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, -1.0f)); // Rotação no eixo Z
-			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, -1.0f));
-		}
-
-		// Ativa textura do cubo 1 antes de desenhar
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texID1);
-
-		// Aplica a escala
-		model1 = glm::scale(model1, glm::vec3(scale, scale, scale));
-		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model1));
-		glDrawArrays(GL_TRIANGLES, 0, numVertices1);
-		glDrawArrays(GL_POINTS, 0, numVertices1);
-
-		// Ativa textura do cubo 2 antes de desenhar
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texID2);
-
-		// Aplica a escala
-		model2 = glm::scale(model2, glm::vec3(scale, scale, scale));
-		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
-		glDrawArrays(GL_TRIANGLES, 0, numVertices2);
-		glDrawArrays(GL_POINTS, 0, numVertices2);
 
 		glBindVertexArray(0);
 
@@ -248,8 +215,9 @@ int main()
 		glfwSwapBuffers(window);
 	}
 	// Pede pra OpenGL desalocar os buffers
-	glDeleteVertexArrays(1, &VAO1);
-	glDeleteVertexArrays(1, &VAO2);
+	for (auto& cubo : cubos) {
+    	glDeleteVertexArrays(1, &cubo.VAO);
+	}
 	// Finaliza a execução da GLFW, limpando os recursos alocados por ela
 	glfwTerminate();
 	return 0;
@@ -311,30 +279,44 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		rotate2 = true;
 	}
 	if (key == GLFW_KEY_Z && action == GLFW_PRESS) { // Aumenta a escala
-        scale += 0.1f; 
+        if (cubo1selecionado) scaleCubo1 += 0.1f;
+		if (cubo2selecionado) scaleCubo2 += 0.1f;
     }
 	if (key == GLFW_KEY_X && action == GLFW_PRESS) { // Diminui a escala e impede valores negativos
-        scale = glm::max(0.1f, scale - 0.1f); 
+        if (cubo1selecionado) scaleCubo1 = glm::max(0.1f, scaleCubo1 - 0.1f);
+		if (cubo2selecionado) scaleCubo2 = glm::max(0.1f, scaleCubo2 - 0.1f);
     }
 	if (key == GLFW_KEY_W && action == GLFW_PRESS) { // Move no eixo Y (para cima)
-		positiveY += 0.2f;
-		negativeY += 0.2f;
+		if (cubo1selecionado) cubo1y += 0.2f;
+		if (cubo2selecionado) cubo2y += 0.2f;
 	}
 	if (key == GLFW_KEY_S && action == GLFW_PRESS) { // Move no eixo Y (para baixo)
-		positiveY -= 0.2f;
-		negativeY -= 0.2f;
+		if (cubo1selecionado) cubo1y -= 0.2f;
+		if (cubo2selecionado) cubo2y -= 0.2f;
 	}
 	if (key == GLFW_KEY_A && action == GLFW_PRESS) { // Move no eixo X (para a esquerda)
-		x -= 0.2f;
+		if (cubo1selecionado) cubo1x -= 0.2f;
+		if (cubo2selecionado) cubo2x -= 0.2f;
 	}
 	if (key == GLFW_KEY_D && action == GLFW_PRESS) { // Move no eixo X (para a direita)
-		x += 0.2f;
+		if (cubo1selecionado) cubo1x += 0.2f;
+		if (cubo2selecionado) cubo2x += 0.2f;
 	}
 	if (key == GLFW_KEY_I && action == GLFW_PRESS) { // Move no eixo Z (para frente)
-		z += 0.2f;
+		if (cubo1selecionado) cubo1z += 0.2f;
+		if (cubo2selecionado) cubo2z += 0.2f;
 	}
 	if (key == GLFW_KEY_J && action == GLFW_PRESS) { // Move no eixo Z (para trás)
-		z -= 0.2f;
+		if (cubo1selecionado) cubo1z -= 0.2f;
+		if (cubo2selecionado) cubo2z -= 0.2f;
+	}
+	if (key == GLFW_KEY_Q && action == GLFW_PRESS) { // Seleciona cubo 1
+		cubo1selecionado = false;
+		cubo2selecionado = true;
+	}
+	if (key == GLFW_KEY_E && action == GLFW_PRESS) { // Seleciona cubo 2
+		cubo1selecionado = true;
+		cubo2selecionado = false;
 	}
 }
 
@@ -382,8 +364,8 @@ int setupShader()
 	return shaderProgram;
 }
 
-// Função para ler e carregar o .obj, retorna o VAO e sua textura
-std::pair<GLuint, GLuint> loadOBJ(const string& path, int &nVertices) {
+// Função para ler e carregar o .obj; retorna o VAO
+GLuint loadOBJ(const string& path, int &nVertices) {
     string line;
     vector<glm::vec3> tempPositions, tempNormals;
     string mtlFile;
@@ -391,7 +373,7 @@ std::pair<GLuint, GLuint> loadOBJ(const string& path, int &nVertices) {
 	ifstream arqEntrada(path.c_str());
     if (!arqEntrada.is_open()) {
         cerr << "Erro ao tentar ler o arquivo " << path << endl;
-        return { -1, -1 };
+        return -1;
     }
 
 	// Leitura de cada linha do arquivo .obj
@@ -402,19 +384,19 @@ std::pair<GLuint, GLuint> loadOBJ(const string& path, int &nVertices) {
 
         if (prefix == "mtllib") {
             iss >> mtlFile;
-        } else if (prefix == "v") {
+        } else if (prefix == "v") { // vertices
             glm::vec3 pos;
             iss >> pos.x >> pos.y >> pos.z;
             tempPositions.push_back(pos);
-        } else if (prefix == "vt") {
+        } else if (prefix == "vt") { // coords de textura
             glm::vec2 tex;
             iss >> tex.x >> tex.y;
             tempTexCoords.push_back(tex);
-        } else if (prefix == "vn") {
+        } else if (prefix == "vn") { // normais
             glm::vec3 normal;
             iss >> normal.x >> normal.y >> normal.z;
             tempNormals.push_back(normal);
-        } else if (prefix == "f") {
+        } else if (prefix == "f") { // recupera e armazena valores de cada indice
             unsigned int pIdx[3], tIdx[3], nIdx[3];
             char slash;
             for (int i = 0; i < 3; ++i) {
@@ -429,13 +411,6 @@ std::pair<GLuint, GLuint> loadOBJ(const string& path, int &nVertices) {
         }
     }
     arqEntrada.close();
-
-    int texWidth, texHeight;
-	GLuint texID;
-
-	// Carregamento da textura presente no arquivo mtl
-    string textureFile = loadMTL("../assets/Modelos3D/" + mtlFile);
-    texID = loadTexture("../assets/textures/" + textureFile, texWidth, texHeight);
 
 	// Vetor para armazenamento dos vértices
     std::vector<GLfloat> vBuffer;
@@ -473,60 +448,5 @@ std::pair<GLuint, GLuint> loadOBJ(const string& path, int &nVertices) {
 	
 	nVertices = vBuffer.size() / 8; // x, y, z, nx, ny, nz, u, v
 
-	return { VAO, texID };
-}
-
-GLuint loadTexture(string filePath, int &width, int &height) {
-	GLuint texID; // id da textura a ser carregada
-
-	// Gera o identificador da textura na memória
-	glGenTextures(1, &texID);
-	glBindTexture(GL_TEXTURE_2D, texID);
-
-	// Ajuste dos parâmetros de wrapping e filtering
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	// Carregamento da imagem usando a função stbi_load da biblioteca stb_image
-	int nrChannels;
-	unsigned char *data = stbi_load(filePath.c_str(), &width, &height, &nrChannels, 0);
-
-	if (data) {
-		if (nrChannels == 3) // jpg, bmp
-		{
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		}
-		else // assume que é 4 canais png
-		{
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		}
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else {
-		std::cout << "Failed to load texture " << filePath << std::endl;
-	}
-
-	stbi_image_free(data);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	return texID;
-}
-
-// Função para carregar o material/textura
-string loadMTL(const string& mtlPath) {
-    ifstream file(mtlPath);
-    string line, textureFile;
-
-	// Encontra o parametro map_Kd, e retorna o arquivo
-    while (getline(file, line)) {
-        istringstream iss(line);
-        string prefix;
-        iss >> prefix;
-        if (prefix == "map_Kd") {
-            iss >> textureFile;
-            break;
-        }
-    }
-    return textureFile;
+	return VAO;
 }
