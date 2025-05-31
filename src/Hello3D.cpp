@@ -1,9 +1,4 @@
-/* Hello Triangle - Marcelo Daros */
-// Configuração do cmake:
-// Ctrl + Shift + P > CMake: Scan for kit
-// Ctrl + Shift + P > CMake: Select a kit
-// Ctrl + Shift + P > CMake: Configure
-// No terminal: cmake --build . > ./Hello3D.exe
+/* Hello Cube - Marcelo Daros */
 
 #include <iostream>
 #include <string>
@@ -21,10 +16,8 @@ using namespace std;
 
 // GLAD
 #include <glad/glad.h>
-
 // GLFW
 #include <GLFW/glfw3.h>
-
 //GLM
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -39,16 +32,6 @@ int setupGeometry();
 std::pair<GLuint, GLuint> loadOBJ(const std::string& path, int &nVertices);
 GLuint loadTexture(string filePath, int &width, int &height);
 string loadMTL(const string& mtlPath);
-
-struct Vertex {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec2 texCoords;
-};
-
-vector<Vertex> vertices;
-vector<unsigned int> indices;
-vector<glm::vec2> tempTexCoords;
 
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 1000, HEIGHT = 1000;
@@ -85,41 +68,91 @@ in vec3 vNormal;
 in vec3 fragPos;
 out vec4 FragColor;
 
+// Estrutura para luz pontual
+struct PointLight {
+    vec3 position;
+    float intensity;
+    bool enabled;
+
+    float constant;
+    float linear;
+    float quadratic;
+};
+
+uniform PointLight mainLight;
+uniform PointLight fillLight;
+uniform PointLight backLight;
+
 uniform sampler2D tex_buffer;
-uniform vec3 lightPos;
 uniform vec3 viewPos;
 uniform float ka;
 uniform float kd;
 uniform float ks;
 uniform float brightness;
 
+// Função para o cálculo de cada ponto de luz com atenuação
+vec3 CalcLight(PointLight light, vec3 normal, vec3 viewDir, vec3 texColor)
+{
+	// Se a luz estiver desativada, não faz os cálculos
+    if (!light.enabled) return vec3(0.0);
+
+    vec3 lightDir = normalize(light.position - fragPos);
+    float distance = length(light.position - fragPos);
+    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * distance * distance);
+    
+	// Coeficiente difuso
+    float diff = max(dot(normal, lightDir), 0.0);
+    vec3 diffuse = kd * diff * texColor;
+
+	// Coeficiente especular
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), brightness);
+    vec3 specular = ks * spec * vec3(1.0);
+
+    return light.intensity * attenuation * (diffuse + specular);
+}
+
 void main()
 {
     vec3 texColor = texture(tex_buffer, texCoords).rgb;
 	vec3 normal = normalize(vNormal);
-    vec3 lightDir = normalize(lightPos - fragPos);
     vec3 viewDir = normalize(viewPos - fragPos);
-    vec3 reflectDir = reflect(-lightDir, normal);
-
+	
 	// Coeficiente de luz ambiente
 	vec3 ambient = ka * texColor;
 
-	// Coeficiente difuso
-	float diff = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = kd * diff * texColor;
+	vec3 result = ambient;
+    result += CalcLight(mainLight, normal, viewDir, texColor);
+    result += CalcLight(fillLight, normal, viewDir, texColor);
+    result += CalcLight(backLight, normal, viewDir, texColor);
 
-	// Coeficiente especular (luz branca)
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), brightness);
-    vec3 specular = ks * spec * vec3(1.0);
-
-	vec3 result = ambient + diffuse + specular;
     FragColor = vec4(result, 1.0);
 }
 )";
 
-float x = 0.0f;							   // os 2 cubos iniciam com x = 0
-float positiveY = 0.4f, negativeY = -0.4f; // positiveY = inicia o eixo Y com +0.4; negativeY = inicia o eixo Y com -0.4
-float z = -3.0f;						   // os 2 cubos iniciam com z = -3
+struct Vertex {
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec2 texCoords;
+};
+
+vector<Vertex> vertices;
+vector<unsigned int> indices;
+vector<glm::vec2> tempTexCoords;
+
+struct Light {
+    glm::vec3 pos;
+    float intensity;
+    bool enabled;
+};
+
+Light mainLight   = {{ 0.0f, 0.5f, -2.0f }, 1.0f, true};  // Luz principal
+Light fillLight   = {{-1.5f, 0.3f, -2.0f }, 0.4f, true};  // Luz de preenchimento
+Light backLight   = {{ 0.0f, 0.5f, -4.0f }, 0.6f, true};  // Luz de fundo
+
+float x = 0.0f;  // o cubo inicia com x = 0
+float y = 0.4f;  // o cubo inicia com y = 0.4
+float z = -3.0f; // o cubo inicia com z = -3
 
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
 float scale = 0.5f;
@@ -175,19 +208,28 @@ int main()
 
 	// Gerando o buffer de VAO e textura de cada cubo
 	int numVertices1;
-	GLuint VAO1, texID1;
-	std::tie(VAO1, texID1) = loadOBJ("../assets/Modelos3D/Cube1.obj", numVertices1);
+	GLuint VAO, texID1;
+	std::tie(VAO, texID1) = loadOBJ("../assets/Modelos3D/Cube1.obj", numVertices1);
 
-	int numVertices2;
-	GLuint VAO2, texID2;
-	std::tie(VAO2, texID2) = loadOBJ("../assets/Modelos3D/Cube2.obj", numVertices2);
-
-	// Enviar a variável que armazenará o buffer de textura no fragment shader
+	// Variável que armazenará o buffer de textura no fragment shader
 	glUniform1i(glGetUniformLocation(shaderID, "tex_buffer"), 0);
 
+	// Variaveis para o cálculo de atenuação
+	float constant = 1.0f;
+	float linear = 0.045f;
+	float quadratic = 0.0075f;
+
+	// Envia as informações de cada ponto de luz para o fragment shader
+	auto setLight = [&](const char* name, const Light& light) {
+		glUniform3fv(glGetUniformLocation(shaderID, (std::string(name) + ".position").c_str()), 1, glm::value_ptr(light.pos));
+		glUniform1f(glGetUniformLocation(shaderID, (std::string(name) + ".intensity").c_str()), light.intensity);
+		glUniform1i(glGetUniformLocation(shaderID, (std::string(name) + ".enabled").c_str()), light.enabled);
+		glUniform1f(glGetUniformLocation(shaderID, (std::string(name) + ".constant").c_str()), constant);
+		glUniform1f(glGetUniformLocation(shaderID, (std::string(name) + ".linear").c_str()), linear);
+		glUniform1f(glGetUniformLocation(shaderID, (std::string(name) + ".quadratic").c_str()), quadratic);
+	};
+
 	// Enviar as variáveis que armazenarão os buffers de iluminação (incluindo ka, kd, ks) no fragment shader
-	glUniform3f(glGetUniformLocation(shaderID, "lightPos"), 2.0f, 2.0f, 2.0f);
-	glUniform3fv(glGetUniformLocation(shaderID, "viewPos"), 1, glm::value_ptr(viewPos));
 	glUniform1f(glGetUniformLocation(shaderID, "ka"), ka);
 	glUniform1f(glGetUniformLocation(shaderID, "kd"), kd);
 	glUniform1f(glGetUniformLocation(shaderID, "ks"), ks);
@@ -197,16 +239,11 @@ int main()
 	glActiveTexture(GL_TEXTURE0);
 
 	// Cubo 1
-	glm::mat4 model1 = glm::mat4(1); //matriz identidade;
-	// Cubo 2
-	glm::mat4 model2 = glm::mat4(1); //matriz identidade;
+	glm::mat4 model = glm::mat4(1); //matriz identidade;
 	GLint modelLoc = glGetUniformLocation(shaderID, "model");
 
-	model1 = glm::rotate(model1, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model1));
-
-	model2 = glm::rotate(model2, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
+	model = glm::rotate(model, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -217,7 +254,7 @@ int main()
 		glfwPollEvents();
 
 		// Limpa o buffer de cor
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f); //cor de fundo
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f); //cor de fundo
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glLineWidth(10);
@@ -225,68 +262,52 @@ int main()
 
 		float angle = (GLfloat)glfwGetTime();
 
-		glBindVertexArray(VAO1);
-		glBindVertexArray(VAO2);
+		// Luzes atualizadas a cada frame
+		setLight("mainLight", mainLight);
+		setLight("fillLight", fillLight);
+		setLight("backLight", backLight);
 
-		// Instanciação dos cubos e aplicação de rotação em cada um
-		model1 = glm::mat4(1);
-		model1 = glm::translate(model1, glm::vec3(x, positiveY, z)); // Move cubo 1 para cima
+		glBindVertexArray(VAO);
 
-		model2 = glm::mat4(1);
-		model2 = glm::translate(model2, glm::vec3(x, negativeY, z)); // Move cubo 1 para baixo
+		// Instanciação do cubo e aplicação de rotação em cada um
+		model = glm::mat4(1);
+		model = glm::translate(model, glm::vec3(x, y, z)); // Move cubo para cima
 
 		if (rotateUp)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(-1.0f, 0.0f, 0.0f)); // Rotação no eixo X
-			model2 = glm::rotate(model2, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
+			model = glm::rotate(model, angle, glm::vec3(-1.0f, 0.0f, 0.0f)); // Rotação no eixo X
 		}
 		else if (rotateDown)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(1.0f, 0.0f, 0.0f)); // Rotação no eixo X
-			model2 = glm::rotate(model2, angle, glm::vec3(1.0f, 0.0f, 0.0f));
+			model = glm::rotate(model, angle, glm::vec3(1.0f, 0.0f, 0.0f)); // Rotação no eixo X
 		}
 		else if (rotateLeft)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, -1.0f, 0.0f)); // Rotação no eixo Y
-			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, -1.0f, 0.0f));
+			model = glm::rotate(model, angle, glm::vec3(0.0f, -1.0f, 0.0f)); // Rotação no eixo Y
 		}
 		else if (rotateRight)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 1.0f, 0.0f)); // Rotação no eixo Y
-			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f)); // Rotação no eixo Y
 		}
 		else if (rotate1)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, 1.0f)); // Rotação no eixo Z
-			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, 1.0f));
+			model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f)); // Rotação no eixo Z
 		}
 		else if (rotate2)
 		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, -1.0f)); // Rotação no eixo Z
-			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, -1.0f));
+			model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, -1.0f)); // Rotação no eixo Z
 		}
 
-		// Ativa textura do cubo 1 antes de desenhar
+		// Ativa textura do cubo antes de desenhar
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texID1);
 
 		// Aplica a escala
-		model1 = glm::scale(model1, glm::vec3(scale, scale, scale));
+		model = glm::scale(model, glm::vec3(scale, scale, scale));
 		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model1));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		glDrawArrays(GL_TRIANGLES, 0, numVertices1);
 		glDrawArrays(GL_POINTS, 0, numVertices1);
-
-		// Ativa textura do cubo 2 antes de desenhar
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texID2);
-
-		// Aplica a escala
-		model2 = glm::scale(model2, glm::vec3(scale, scale, scale));
-		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
-		glDrawArrays(GL_TRIANGLES, 0, numVertices2);
-		glDrawArrays(GL_POINTS, 0, numVertices2);
 
 		glBindVertexArray(0);
 
@@ -294,8 +315,7 @@ int main()
 		glfwSwapBuffers(window);
 	}
 	// Pede pra OpenGL desalocar os buffers
-	glDeleteVertexArrays(1, &VAO1);
-	glDeleteVertexArrays(1, &VAO2);
+	glDeleteVertexArrays(1, &VAO);
 	// Finaliza a execução da GLFW, limpando os recursos alocados por ela
 	glfwTerminate();
 	return 0;
@@ -305,9 +325,14 @@ int main()
 // estiver dentro de uma classe) - É chamada sempre que uma tecla for pressionada ou solta via GLFW
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+	if (action == GLFW_PRESS) {
+		if (key == GLFW_KEY_4) mainLight.enabled = !mainLight.enabled;
+		if (key == GLFW_KEY_5) fillLight.enabled = !fillLight.enabled;
+		if (key == GLFW_KEY_6) backLight.enabled = !backLight.enabled;
+	}
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, GL_TRUE);
-
+	}
 	if (key == GLFW_KEY_UP && action == GLFW_PRESS) {
 		rotateUp = true;
 		rotateDown = false;
@@ -363,12 +388,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         scale = glm::max(0.1f, scale - 0.1f); 
     }
 	if (key == GLFW_KEY_W && action == GLFW_PRESS) { // Move no eixo Y (para cima)
-		positiveY += 0.2f;
-		negativeY += 0.2f;
+		y += 0.2f;
 	}
 	if (key == GLFW_KEY_S && action == GLFW_PRESS) { // Move no eixo Y (para baixo)
-		positiveY -= 0.2f;
-		negativeY -= 0.2f;
+		y -= 0.2f;
 	}
 	if (key == GLFW_KEY_A && action == GLFW_PRESS) { // Move no eixo X (para a esquerda)
 		x -= 0.2f;
