@@ -13,4 +13,5 @@ Nome: Marcelo Strack Daros
     * Tecla 5: liga/desliga a luz de preenchimento
     * Tecla 6: liga/desliga a luz de fundo
 * No loop da aplicação, os pontos de luz são atualizados a cada frame.
-* Eu já fiz a atividade do módulo 5 (sobre câmera), mas não implementei câmera nessa atividade. Portanto, para ver melhor o efeito da luz de fundo, é bom desligar as outras duas luzes e mover o cubo (via teclas WASD) para a esquerda ou direita. Assim o efeito da luz de fundo se torna mais visível, visto que a posição de visualização é estática. Ao rotacionar o cubo (via setas) a percepção das luzes também se torna mais evidente.
+* Como não tem câmera nessa atividade, para ver melhor o efeito da luz de fundo, é bom desligar as outras duas luzes e mover o cubo (via teclas WASD) para a esquerda ou direita. Assim o efeito da luz de fundo se torna mais visível, visto que a posição de visualização é estática. Ao rotacionar o cubo (via setas) a percepção das luzes também se torna mais evidente.
+* Código fonte: https://github.com/marcelosdaros/computacao_grafica/blob/vivencial_2/src/Hello3D.cpp
