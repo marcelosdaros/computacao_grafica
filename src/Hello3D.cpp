@@ -1,4 +1,4 @@
-/* Hello Triangle - Marcelo Daros */
+/* Hello Cube - Marcelo Daros */
 // Configuração do cmake:
 // Ctrl + Shift + P > CMake: Scan for kit
 // Ctrl + Shift + P > CMake: Select a kit
@@ -12,19 +12,15 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <cmath>
-
 using namespace std;
 
 // GLAD
 #include <glad/glad.h>
-
 // GLFW
 #include <GLFW/glfw3.h>
-
 //GLM
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -123,7 +119,7 @@ float z = -3.0f;						   // os 2 cubos iniciam com z = -3
 
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
 float scale = 0.5f;
-float ka = 0.1f, kd = 0.8f, ks = 0.6f, brightness = 60.0f;
+float ka = 0.1f, kd = 0.8f, ks = 0.6f, brightness = 40.0f;
 
 // Função MAIN
 int main()
@@ -186,7 +182,7 @@ int main()
 	glUniform1i(glGetUniformLocation(shaderID, "tex_buffer"), 0);
 
 	// Enviar as variáveis que armazenarão os buffers de iluminação (incluindo ka, kd, ks) no fragment shader
-	glUniform3f(glGetUniformLocation(shaderID, "lightPos"), 2.0f, 2.0f, 2.0f);
+	glUniform3f(glGetUniformLocation(shaderID, "lightPos"), 0.0f, 0.5f, 2.0f);
 	glUniform3fv(glGetUniformLocation(shaderID, "viewPos"), 1, glm::value_ptr(viewPos));
 	glUniform1f(glGetUniformLocation(shaderID, "ka"), ka);
 	glUniform1f(glGetUniformLocation(shaderID, "kd"), kd);
@@ -217,7 +213,7 @@ int main()
 		glfwPollEvents();
 
 		// Limpa o buffer de cor
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f); //cor de fundo
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f); //cor de fundo
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glLineWidth(10);
