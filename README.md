@@ -5,8 +5,8 @@ Nome: Marcelo Strack Daros
 
 ## Especificações:
 * Essa atividade foi desenvolvida com base no desafio do módulo 4 (já entregue), mas usando apenas um cubo.
-* No Fragment Shader, foi criada a função CalcLight(), para calcular as reflexões e variáveis de cada um dos 3 pontos de luz.
-* As variáveis lightDir e reflectDir foram removidas da main() do Fragment Shader e passadas para a CalcLight(). O mesmo foi feito com o fator de atenuação e com os coeficientes difuso e especular. Apenas a luz ambiente permaneceu na main, visto que essa não muda para nenhum ponto de luz.
+* No Fragment Shader, foi criada a função lightCalculation(), para calcular as reflexões e variáveis de cada um dos 3 pontos de luz.
+* As variáveis lightDir e reflectDir foram removidas da main() do Fragment Shader e passadas para a lightCalculation(). O mesmo foi feito com o fator de atenuação e com os coeficientes difuso e especular. Apenas a luz ambiente permaneceu na main, visto que essa não muda para nenhum ponto de luz.
 * A struct PointLight foi criada para armazenar as informações de cada um dos 3 pontos de luz, e cada um foi criado como variável global.
 * As teclas 4, 5 e 6 ligam/desligam cada ponto de luz:
     * Tecla 4: liga/desliga a luz principal

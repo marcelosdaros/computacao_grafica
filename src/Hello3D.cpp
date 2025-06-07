@@ -89,7 +89,7 @@ uniform float ks;
 uniform float brightness;
 
 // Função para o cálculo de cada ponto de luz com atenuação
-vec3 CalcLight(PointLight light, vec3 normal, vec3 viewDir, vec3 texColor)
+vec3 lightCalculation(PointLight light, vec3 normal, vec3 viewDir, vec3 texColor)
 {
 	// Se a luz estiver desativada, não faz os cálculos
     if (!light.enabled) return vec3(0.0);
@@ -120,9 +120,9 @@ void main()
 	vec3 ambient = ka * texColor;
 
 	vec3 result = ambient;
-    result += CalcLight(mainLight, normal, viewDir, texColor);
-    result += CalcLight(fillLight, normal, viewDir, texColor);
-    result += CalcLight(backLight, normal, viewDir, texColor);
+    result += lightCalculation(mainLight, normal, viewDir, texColor);
+    result += lightCalculation(fillLight, normal, viewDir, texColor);
+    result += lightCalculation(backLight, normal, viewDir, texColor);
 
     FragColor = vec4(result, 1.0);
 }
