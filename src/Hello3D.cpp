@@ -192,11 +192,11 @@ int main()
 	// Gerando o buffer de VAO e textura de cada cubo
 	int numVertices1;
 	GLuint VAO1, texID1;
-	std::tie(VAO1, texID1) = loadOBJ("../assets/Modelos3D/Cube1.obj", numVertices1);
+	std::tie(VAO1, texID1) = loadOBJ("../assets/Modelos3D/Piramide.obj", numVertices1);
 
 	int numVertices2;
 	GLuint VAO2, texID2;
-	std::tie(VAO2, texID2) = loadOBJ("../assets/Modelos3D/Cube2.obj", numVertices2);
+	std::tie(VAO2, texID2) = loadOBJ("../assets/Modelos3D/Piramide.obj", numVertices2);
 
 	// Enviar a variável que armazenará o buffer de textura no fragment shader
 	glUniform1i(glGetUniformLocation(shaderID, "tex_buffer"), 0);
