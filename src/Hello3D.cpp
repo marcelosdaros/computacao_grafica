@@ -118,11 +118,11 @@ vector<glm::vec2> tempTexCoords;
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 1000, HEIGHT = 1000;
 
-float x = 0.0f;							   // os 2 cubos iniciam com x = 0
-float positiveY = 0.4f, negativeY = -0.4f; // positiveY = inicia o eixo Y com +0.4; negativeY = inicia o eixo Y com -0.4
-float z = 0.0f;						       // os 2 cubos iniciam com z = -3
+float x1 = -1.0f, x2 = 0.0f, x3 = 1.2f; // Piramides iniciam com coordenadas x diferentes
+float y = 0.0f; // Piramides iniciam com y = 0
+float z = 0.0f;	// Piramides iniciam com z = 0
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
-float scale = 0.5f;
+float scale1 = 0.5, scale2 = 0.9f, scale3 = 0.7f;
 float ka = 0.1f, kd = 0.8f, ks = 0.6f, brightness = 60.0f;
 
 // Variaveis para controle de movimentação da camera
@@ -162,12 +162,6 @@ int main()
 		std::cout << "Failed to initialize GLAD" << std::endl;
 	}
 
-	// Obtendo as informações de versão
-	const GLubyte* renderer = glGetString(GL_RENDERER); /* get renderer string */
-	const GLubyte* version = glGetString(GL_VERSION); /* version as a string */
-	cout << "Renderer: " << renderer << endl;
-	cout << "OpenGL version supported " << version << endl;
-
 	// Definindo as dimensões da viewport com as mesmas dimensões da janela da aplicação
 	int width, height;
 	glfwGetFramebufferSize(window, &width, &height);
@@ -177,19 +171,22 @@ int main()
 	GLuint shaderID = setupShader();
 	glUseProgram(shaderID);
 
-	// Cubo 1
+	// Piramide 1
 	glm::mat4 model1 = glm::mat4(1); //matriz identidade;
-	// Cubo 2
+	// Piramide 2
 	glm::mat4 model2 = glm::mat4(1); //matriz identidade;
+	// Piramide 2
+	glm::mat4 model3 = glm::mat4(1); //matriz identidade;
 
 	model1 = glm::rotate(model1, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	model2 = glm::rotate(model2, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	model3 = glm::rotate(model2, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
 	GLuint projLoc = glGetUniformLocation(shaderID, "projection");
 	GLint viewLoc = glGetUniformLocation(shaderID, "view");
 	GLint modelLoc = glGetUniformLocation(shaderID, "model");
 
-	// Gerando o buffer de VAO e textura de cada cubo
+	// Gerando o buffer de VAO e textura de cada Piramide
 	int numVertices1;
 	GLuint VAO1, texID1;
 	std::tie(VAO1, texID1) = loadOBJ("../assets/Modelos3D/Piramide.obj", numVertices1);
@@ -197,6 +194,10 @@ int main()
 	int numVertices2;
 	GLuint VAO2, texID2;
 	std::tie(VAO2, texID2) = loadOBJ("../assets/Modelos3D/Piramide.obj", numVertices2);
+
+	int numVertices3;
+	GLuint VAO3, texID3;
+	std::tie(VAO3, texID3) = loadOBJ("../assets/Modelos3D/Piramide.obj", numVertices2);
 
 	// Enviar a variável que armazenará o buffer de textura no fragment shader
 	glUniform1i(glGetUniformLocation(shaderID, "tex_buffer"), 0);
@@ -220,11 +221,13 @@ int main()
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-		// Instanciação dos cubos
+		// Instanciação das piramides
 		model1 = glm::mat4(1);
-		model1 = glm::translate(model1, glm::vec3(x, positiveY, z)); // Move cubo 1 para cima
+		model1 = glm::translate(model1, glm::vec3(x1, y, z));
 		model2 = glm::mat4(1);
-		model2 = glm::translate(model2, glm::vec3(x, negativeY, z)); // Move cubo 1 para baixo
+		model2 = glm::translate(model2, glm::vec3(x2, y, z));
+		model3 = glm::mat4(1);
+		model3 = glm::translate(model3, glm::vec3(x3, y, z));
 
 		// Verifica se houveram eventos de input e chama as funções de callback
 		glfwPollEvents();
@@ -255,54 +258,71 @@ int main()
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(-1.0f, 0.0f, 0.0f)); // Rotação no eixo X
 			model2 = glm::rotate(model2, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
+			model3 = glm::rotate(model3, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
 		}
 		else if (rotateDown)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(1.0f, 0.0f, 0.0f)); // Rotação no eixo X
 			model2 = glm::rotate(model2, angle, glm::vec3(1.0f, 0.0f, 0.0f));
+			model3 = glm::rotate(model3, angle, glm::vec3(1.0f, 0.0f, 0.0f));
 		}
 		else if (rotateLeft)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, -1.0f, 0.0f)); // Rotação no eixo Y
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, -1.0f, 0.0f));
+			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, -1.0f, 0.0f));
 		}
 		else if (rotateRight)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 1.0f, 0.0f)); // Rotação no eixo Y
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, 1.0f, 0.0f));
 		}
 		else if (rotate1)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, 1.0f)); // Rotação no eixo Z
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, 1.0f));
+			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, 0.0f, 1.0f));
 		}
 		else if (rotate2)
 		{
 			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, -1.0f)); // Rotação no eixo Z
 			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, -1.0f));
+			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, 0.0f, -1.0f));
 		}
 
-		// Ativa textura do cubo 1 antes de desenhar
+		// Ativa textura do piramide 1 antes de desenhar
 		glActiveTexture(GL_TEXTURE0);
 		glBindVertexArray(VAO1);
 		glBindTexture(GL_TEXTURE_2D, texID1);
 
 		// Aplica a escala
-		model1 = glm::scale(model1, glm::vec3(scale, scale, scale));
+		model1 = glm::scale(model1, glm::vec3(scale1, scale1, scale1));
 		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model1));
 		glDrawArrays(GL_TRIANGLES, 0, numVertices1);
 
-		// Ativa textura do cubo 2 antes de desenhar
+		// Ativa textura do piramide 2 antes de desenhar
 		glActiveTexture(GL_TEXTURE0);
 		glBindVertexArray(VAO2);
 		glBindTexture(GL_TEXTURE_2D, texID2);
 
 		// Aplica a escala
-		model2 = glm::scale(model2, glm::vec3(scale, scale, scale));
+		model2 = glm::scale(model2, glm::vec3(scale2, scale2, scale2));
 		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
 		glDrawArrays(GL_TRIANGLES, 0, numVertices2);
+
+		// Ativa textura do piramide 3 antes de desenhar
+		glActiveTexture(GL_TEXTURE0);
+		glBindVertexArray(VAO3);
+		glBindTexture(GL_TEXTURE_2D, texID3);
+
+		// Aplica a escala
+		model3 = glm::scale(model3, glm::vec3(scale3, scale3, scale3));
+		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model3));
+		glDrawArrays(GL_TRIANGLES, 0, numVertices3);
 
 		glBindVertexArray(0);
 
@@ -312,6 +332,7 @@ int main()
 	// Pede pra OpenGL desalocar os buffers
 	glDeleteVertexArrays(1, &VAO1);
 	glDeleteVertexArrays(1, &VAO2);
+	glDeleteVertexArrays(1, &VAO3);
 	// Finaliza a execução da GLFW, limpando os recursos alocados por ela
 	glfwTerminate();
 	return 0;
@@ -372,10 +393,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		rotate2 = true;
 	}
 	if (key == GLFW_KEY_Z && action == GLFW_PRESS) { // Aumenta a escala
-        scale += 0.1f; 
+        scale1 += 0.1f; 
     }
 	if (key == GLFW_KEY_X && action == GLFW_PRESS) { // Diminui a escala e impede valores negativos
-        scale = glm::max(0.1f, scale - 0.1f); 
+        scale1 = glm::max(0.1f, scale1 - 0.1f); 
     }
 	if (key == GLFW_KEY_I && action == GLFW_PRESS) { // Move no eixo Z (para frente)
 		z += 0.2f;
