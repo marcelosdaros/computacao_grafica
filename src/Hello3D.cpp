@@ -136,9 +136,9 @@ bool firstMouse = true;
 
 // Camera global
 Camera camera(
-    glm::vec3(0.0f, 0.0f, 3.0f),     // posição da câmera: afastada no eixo Z
+    glm::vec3(-3.56f, 0.45f, 2.55f),     // posição da câmera: afastada no eixo Z
     glm::vec3(0.0f, 1.0f, 0.0f),
-    -90.0f, 0.0f                     // yaw, pitch (olhando para -Z)
+    -30.0f, 0.0f                     // yaw, pitch (olhando para -Z)
 );
 
 // Função MAIN
@@ -197,7 +197,7 @@ int main()
 
 	int numVertices3;
 	GLuint VAO3, texID3;
-	std::tie(VAO3, texID3) = loadOBJ("../assets/Modelos3D/Piramide.obj", numVertices2);
+	std::tie(VAO3, texID3) = loadOBJ("../assets/Modelos3D/Piramide.obj", numVertices3);
 
 	// Enviar a variável que armazenará o buffer de textura no fragment shader
 	glUniform1i(glGetUniformLocation(shaderID, "tex_buffer"), 0);
