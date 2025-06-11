@@ -5,18 +5,7 @@
 // Ctrl + Shift + P > CMake: Configure
 // No terminal: cmake --build . > ./Hello3D.exe
 
-#include <iostream>
-#include <string>
-#include <assert.h>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <vector>
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-#include <cmath>
 using namespace std;
-
 // GLAD
 #include <glad/glad.h>
 // GLFW
@@ -27,18 +16,14 @@ using namespace std;
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Camera.h"
+#include "Object3D.h"
 
 // Protótipo das funções de callback de teclado e cursor
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-
 // Protótipos das funções
 int setupShader();
-int setupGeometry();
-std::pair<GLuint, GLuint> loadOBJ(const std::string& path, int &nVertices);
-GLuint loadTexture(string filePath, int &width, int &height);
-string loadMTL(const string& mtlPath);
 
 // Código fonte do Vertex Shader (em GLSL):
 const GLchar* vertexShaderSource = R"(
@@ -105,22 +90,12 @@ void main()
 }
 )";
 
-struct Vertex {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec2 texCoords;
-};
-
-vector<Vertex> vertices;
-vector<unsigned int> indices;
-vector<glm::vec2> tempTexCoords;
-
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 1000, HEIGHT = 1000;
 
 float x1 = -1.0f, x2 = 0.0f, x3 = 1.2f; // Piramides iniciam com coordenadas x diferentes
-float y = 0.0f; // Piramides iniciam com y = 0
-float z = 0.0f;	// Piramides iniciam com z = 0
+float y = 0.0f;                         // Piramides iniciam com y = 0
+float z = 0.0f;	                        // Piramides iniciam com z = 0
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
 float scale1 = 0.5, scale2 = 0.9f, scale3 = 0.7f;
 float ka = 0.1f, kd = 0.8f, ks = 0.6f, brightness = 60.0f;
@@ -136,7 +111,7 @@ bool firstMouse = true;
 
 // Camera global
 Camera camera(
-    glm::vec3(-3.56f, 0.45f, 2.55f),     // posição da câmera: afastada no eixo Z
+    glm::vec3(-3.56f, 0.45f, 2.55f), // posição inicial da câmera
     glm::vec3(0.0f, 1.0f, 0.0f),
     -30.0f, 0.0f                     // yaw, pitch (olhando para -Z)
 );
@@ -171,33 +146,13 @@ int main()
 	GLuint shaderID = setupShader();
 	glUseProgram(shaderID);
 
-	// Piramide 1
-	glm::mat4 model1 = glm::mat4(1); //matriz identidade;
-	// Piramide 2
-	glm::mat4 model2 = glm::mat4(1); //matriz identidade;
-	// Piramide 2
-	glm::mat4 model3 = glm::mat4(1); //matriz identidade;
-
-	model1 = glm::rotate(model1, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	model2 = glm::rotate(model2, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	model3 = glm::rotate(model2, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	Object3D piramide1("../assets/Modelos3D/Piramide.obj", glm::vec3(x1, y, z), glm::vec3(scale1));
+	Object3D piramide2("../assets/Modelos3D/Piramide.obj", glm::vec3(x2, y, z), glm::vec3(scale2));
+	Object3D piramide3("../assets/Modelos3D/Piramide.obj", glm::vec3(x3, y, z), glm::vec3(scale3));
 
 	GLuint projLoc = glGetUniformLocation(shaderID, "projection");
 	GLint viewLoc = glGetUniformLocation(shaderID, "view");
 	GLint modelLoc = glGetUniformLocation(shaderID, "model");
-
-	// Gerando o buffer de VAO e textura de cada Piramide
-	int numVertices1;
-	GLuint VAO1, texID1;
-	std::tie(VAO1, texID1) = loadOBJ("../assets/Modelos3D/Piramide.obj", numVertices1);
-
-	int numVertices2;
-	GLuint VAO2, texID2;
-	std::tie(VAO2, texID2) = loadOBJ("../assets/Modelos3D/Piramide.obj", numVertices2);
-
-	int numVertices3;
-	GLuint VAO3, texID3;
-	std::tie(VAO3, texID3) = loadOBJ("../assets/Modelos3D/Piramide.obj", numVertices3);
 
 	// Enviar a variável que armazenará o buffer de textura no fragment shader
 	glUniform1i(glGetUniformLocation(shaderID, "tex_buffer"), 0);
@@ -220,14 +175,6 @@ int main()
 		float currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
-
-		// Instanciação das piramides
-		model1 = glm::mat4(1);
-		model1 = glm::translate(model1, glm::vec3(x1, y, z));
-		model2 = glm::mat4(1);
-		model2 = glm::translate(model2, glm::vec3(x2, y, z));
-		model3 = glm::mat4(1);
-		model3 = glm::translate(model3, glm::vec3(x3, y, z));
 
 		// Verifica se houveram eventos de input e chama as funções de callback
 		glfwPollEvents();
@@ -254,86 +201,16 @@ int main()
 		glPointSize(20);
 		float angle = (GLfloat)glfwGetTime();
 
-		if (rotateUp)
-		{
-			model1 = glm::rotate(model1, angle, glm::vec3(-1.0f, 0.0f, 0.0f)); // Rotação no eixo X
-			model2 = glm::rotate(model2, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
-			model3 = glm::rotate(model3, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
-		}
-		else if (rotateDown)
-		{
-			model1 = glm::rotate(model1, angle, glm::vec3(1.0f, 0.0f, 0.0f)); // Rotação no eixo X
-			model2 = glm::rotate(model2, angle, glm::vec3(1.0f, 0.0f, 0.0f));
-			model3 = glm::rotate(model3, angle, glm::vec3(1.0f, 0.0f, 0.0f));
-		}
-		else if (rotateLeft)
-		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, -1.0f, 0.0f)); // Rotação no eixo Y
-			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, -1.0f, 0.0f));
-			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, -1.0f, 0.0f));
-		}
-		else if (rotateRight)
-		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 1.0f, 0.0f)); // Rotação no eixo Y
-			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-		}
-		else if (rotate1)
-		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, 1.0f)); // Rotação no eixo Z
-			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, 1.0f));
-			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, 0.0f, 1.0f));
-		}
-		else if (rotate2)
-		{
-			model1 = glm::rotate(model1, angle, glm::vec3(0.0f, 0.0f, -1.0f)); // Rotação no eixo Z
-			model2 = glm::rotate(model2, angle, glm::vec3(0.0f, 0.0f, -1.0f));
-			model3 = glm::rotate(model3, angle, glm::vec3(0.0f, 0.0f, -1.0f));
-		}
-
-		// Ativa textura do piramide 1 antes de desenhar
-		glActiveTexture(GL_TEXTURE0);
-		glBindVertexArray(VAO1);
-		glBindTexture(GL_TEXTURE_2D, texID1);
-
-		// Aplica a escala
-		model1 = glm::scale(model1, glm::vec3(scale1, scale1, scale1));
-		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model1));
-		glDrawArrays(GL_TRIANGLES, 0, numVertices1);
-
-		// Ativa textura do piramide 2 antes de desenhar
-		glActiveTexture(GL_TEXTURE0);
-		glBindVertexArray(VAO2);
-		glBindTexture(GL_TEXTURE_2D, texID2);
-
-		// Aplica a escala
-		model2 = glm::scale(model2, glm::vec3(scale2, scale2, scale2));
-		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
-		glDrawArrays(GL_TRIANGLES, 0, numVertices2);
-
-		// Ativa textura do piramide 3 antes de desenhar
-		glActiveTexture(GL_TEXTURE0);
-		glBindVertexArray(VAO3);
-		glBindTexture(GL_TEXTURE_2D, texID3);
-
-		// Aplica a escala
-		model3 = glm::scale(model3, glm::vec3(scale3, scale3, scale3));
-		// Chamada de desenho (drawcall) e polígono preenchido com GL_TRIANGLES
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model3));
-		glDrawArrays(GL_TRIANGLES, 0, numVertices3);
+		piramide1.draw(modelLoc, angle, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
+		piramide2.draw(modelLoc, angle, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
+		piramide3.draw(modelLoc, angle, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
 
 		glBindVertexArray(0);
 
 		// Troca os buffers da tela
 		glfwSwapBuffers(window);
 	}
-	// Pede pra OpenGL desalocar os buffers
-	glDeleteVertexArrays(1, &VAO1);
-	glDeleteVertexArrays(1, &VAO2);
-	glDeleteVertexArrays(1, &VAO3);
-	// Finaliza a execução da GLFW, limpando os recursos alocados por ela
+
 	glfwTerminate();
 	return 0;
 }
@@ -472,155 +349,4 @@ int setupShader()
 	glDeleteShader(fragmentShader);
 
 	return shaderProgram;
-}
-
-// Função para ler e carregar o .obj, retorna o VAO e sua textura
-std::pair<GLuint, GLuint> loadOBJ(const string& path, int &nVertices) {
-    string line;
-    vector<glm::vec3> tempPositions, tempNormals;
-    string mtlFile;
-
-	ifstream arqEntrada(path.c_str());
-    if (!arqEntrada.is_open()) {
-        cerr << "Erro ao tentar ler o arquivo " << path << endl;
-        return { -1, -1 };
-    }
-
-	// Leitura de cada linha do arquivo .obj
-    while (getline(arqEntrada, line)) {
-        istringstream iss(line);
-        string prefix;
-        iss >> prefix;
-
-        if (prefix == "mtllib") {
-            iss >> mtlFile;
-        } else if (prefix == "v") {
-            glm::vec3 pos;
-            iss >> pos.x >> pos.y >> pos.z;
-            tempPositions.push_back(pos);
-        } else if (prefix == "vt") {
-            glm::vec2 tex;
-            iss >> tex.x >> tex.y;
-            tempTexCoords.push_back(tex);
-        } else if (prefix == "vn") {
-            glm::vec3 normal;
-            iss >> normal.x >> normal.y >> normal.z;
-            tempNormals.push_back(normal);
-        } else if (prefix == "f") {
-            unsigned int pIdx[3], tIdx[3], nIdx[3];
-            char slash;
-            for (int i = 0; i < 3; ++i) {
-                iss >> pIdx[i] >> slash >> tIdx[i] >> slash >> nIdx[i];
-                Vertex vertex;
-                vertex.position = tempPositions[pIdx[i] - 1];
-                vertex.normal = tempNormals[nIdx[i] - 1];
-                vertex.texCoords = tempTexCoords[tIdx[i] - 1];
-                vertices.push_back(vertex);
-                indices.push_back(vertices.size() - 1);
-            }
-        }
-    }
-    arqEntrada.close();
-
-    int texWidth, texHeight;
-	GLuint texID;
-
-	// Carregamento da textura presente no arquivo mtl
-    string textureFile = loadMTL("../assets/Modelos3D/" + mtlFile);
-    texID = loadTexture("../assets/textures/" + textureFile, texWidth, texHeight);
-
-	// Vetor para armazenamento dos vértices
-    std::vector<GLfloat> vBuffer;
-    for (const auto& v : vertices) {
-		vBuffer.push_back(v.position.x);
-		vBuffer.push_back(v.position.y);
-		vBuffer.push_back(v.position.z);
-		vBuffer.push_back(v.normal.x);
-		vBuffer.push_back(v.normal.y);
-		vBuffer.push_back(v.normal.z);
-		vBuffer.push_back(v.texCoords.x);
-		vBuffer.push_back(v.texCoords.y);
-	}
-	
-	std::cout << "Gerando o buffer de geometria..." << std::endl;
-	GLuint VBO, VAO;
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, vBuffer.size() * sizeof(GLfloat), vBuffer.data(), GL_STATIC_DRAW);
-	
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
-	
-	// Posição (location 0)
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
-	
-	// Normal (location 1)
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(1);
-	
-	// Textura (location 2)
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(2);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-	
-	nVertices = vBuffer.size() / 8; // x, y, z, nx, ny, nz, u, v
-	return { VAO, texID };
-}
-
-GLuint loadTexture(string filePath, int &width, int &height) {
-	GLuint texID; // id da textura a ser carregada
-
-	// Gera o identificador da textura na memória
-	glGenTextures(1, &texID);
-	glBindTexture(GL_TEXTURE_2D, texID);
-
-	// Ajuste dos parâmetros de wrapping e filtering
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	// Carregamento da imagem usando a função stbi_load da biblioteca stb_image
-	int nrChannels;
-	unsigned char *data = stbi_load(filePath.c_str(), &width, &height, &nrChannels, 0);
-
-	if (data) {
-		if (nrChannels == 3) // jpg, bmp
-		{
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		}
-		else // assume que é 4 canais png
-		{
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		}
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else {
-		std::cout << "Failed to load texture " << filePath << std::endl;
-	}
-
-	stbi_image_free(data);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	return texID;
-}
-
-// Função para carregar o material/textura
-string loadMTL(const string& mtlPath) {
-    ifstream file(mtlPath);
-    string line, textureFile;
-
-	// Encontra o parametro map_Kd, e retorna o arquivo
-    while (getline(file, line)) {
-        istringstream iss(line);
-        string prefix;
-        iss >> prefix;
-        if (prefix == "map_Kd") {
-            iss >> textureFile;
-            break;
-        }
-    }
-    return textureFile;
 }

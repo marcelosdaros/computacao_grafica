@@ -89,5 +89,4 @@ private:
         cameraUp = glm::normalize(glm::cross(right, cameraFront));
     }
 };
-
 #endif
