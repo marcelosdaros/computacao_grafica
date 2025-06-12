@@ -18,14 +18,14 @@ using namespace std;
 #include "Camera.h"
 #include "Object3D.h"
 
-// Protótipo das funções de callback de teclado e cursor
+// Protótipo das funções de callback de teclado e mouse
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 // Protótipos das funções
 int setupShader();
 
-// Código fonte do Vertex Shader (em GLSL):
+// Vertex Shader (em GLSL):
 const GLchar* vertexShaderSource = R"(
 #version 450
 layout (location = 0) in vec3 position;
@@ -50,7 +50,7 @@ void main()
 }
 )";
 
-// Código fonte do Fragment Shader (em GLSL):
+// Fragment Shader (em GLSL):
 const GLchar* fragmentShaderSource = R"(
 #version 450
 in vec2 texCoords;
@@ -93,12 +93,16 @@ void main()
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 1000, HEIGHT = 1000;
 
-float x1 = -1.0f, x2 = 0.0f, x3 = 1.2f; // Piramides iniciam com coordenadas x diferentes
-float y = 0.0f;                         // Piramides iniciam com y = 0
-float z = 0.0f;	                        // Piramides iniciam com z = 0
+// Posição inicial das piramides
+float coord_x1 = -1.0f, coord_x2 = 0.0f, coord_x3 = 1.2f;
+float coord_y1 = 0.0f, coord_y2 = 0.0f, coord_y3 = 0.0f;
+float coord_z1 = 0.0f, coord_z2 = 0.0f, coord_z3 = 0.0f;
+
+// Seleção e valores iniciais de rotações, escala, iluminação
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
 float scale1 = 0.5, scale2 = 0.9f, scale3 = 0.7f;
 float ka = 0.1f, kd = 0.8f, ks = 0.6f, brightness = 60.0f;
+bool isPyramid1Selected=true, isPyramid2Selected=false, isPyramid3Selected=false;
 
 // Variaveis para controle de movimentação da camera
 float deltaTime = 0.0f;
@@ -109,11 +113,11 @@ float lastX = WIDTH / 2.0f;
 float lastY = HEIGHT / 2.0f;
 bool firstMouse = true;
 
-// Camera global
+// Camera global e posição inicial da câmera
 Camera camera(
-    glm::vec3(-3.56f, 0.45f, 2.55f), // posição inicial da câmera
+    glm::vec3(-3.56f, 0.45f, 2.55f),
     glm::vec3(0.0f, 1.0f, 0.0f),
-    -30.0f, 0.0f                     // yaw, pitch (olhando para -Z)
+    -30.0f, 0.0f
 );
 
 // Função MAIN
@@ -122,7 +126,7 @@ int main()
 	glfwInit(); // Inicialização da GLFW
 
 	// Criação da janela GLFW e cursor escondido
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Ola 3D -- Marcelo!", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Trabalho GB -- Marcelo!", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -146,19 +150,20 @@ int main()
 	GLuint shaderID = setupShader();
 	glUseProgram(shaderID);
 
-	Object3D piramide1("../assets/Modelos3D/Piramide.obj", glm::vec3(x1, y, z), glm::vec3(scale1));
-	Object3D piramide2("../assets/Modelos3D/Piramide.obj", glm::vec3(x2, y, z), glm::vec3(scale2));
-	Object3D piramide3("../assets/Modelos3D/Piramide.obj", glm::vec3(x3, y, z), glm::vec3(scale3));
-
 	GLuint projLoc = glGetUniformLocation(shaderID, "projection");
 	GLint viewLoc = glGetUniformLocation(shaderID, "view");
 	GLint modelLoc = glGetUniformLocation(shaderID, "model");
+
+	// Criação dos objetos 3D (piramides)
+	Object3D piramide1("../assets/Modelos3D/Piramide.obj", glm::vec3(coord_x1, coord_y1, coord_z1), glm::vec3(scale1));
+	Object3D piramide2("../assets/Modelos3D/Piramide.obj", glm::vec3(coord_x2, coord_y2, coord_z2), glm::vec3(scale2));
+	Object3D piramide3("../assets/Modelos3D/Piramide.obj", glm::vec3(coord_x3, coord_y3, coord_z3), glm::vec3(scale3));
 
 	// Enviar a variável que armazenará o buffer de textura no fragment shader
 	glUniform1i(glGetUniformLocation(shaderID, "tex_buffer"), 0);
 
 	// Enviar as variáveis que armazenarão os buffers de iluminação (incluindo ka, kd, ks) no fragment shader
-	glUniform3f(glGetUniformLocation(shaderID, "lightPos"), 1.0f, 1.0f, 1.0f);
+	glUniform3f(glGetUniformLocation(shaderID, "lightPos"), 1.0f, 2.0f, 1.0f);
 	glUniform1f(glGetUniformLocation(shaderID, "ka"), ka);
 	glUniform1f(glGetUniformLocation(shaderID, "kd"), kd);
 	glUniform1f(glGetUniformLocation(shaderID, "ks"), ks);
@@ -201,9 +206,10 @@ int main()
 		glPointSize(20);
 		float angle = (GLfloat)glfwGetTime();
 
-		piramide1.draw(modelLoc, angle, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
-		piramide2.draw(modelLoc, angle, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
-		piramide3.draw(modelLoc, angle, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
+		// Desenho das piramides
+		piramide1.draw(modelLoc, glm::vec3(coord_x1, coord_y1, coord_z1), angle, scale1, isPyramid1Selected, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
+		piramide2.draw(modelLoc, glm::vec3(coord_x2, coord_y2, coord_z2), angle, scale2, isPyramid2Selected, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
+		piramide3.draw(modelLoc, glm::vec3(coord_x3, coord_y3, coord_z3), angle, scale3, isPyramid3Selected, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
 
 		glBindVertexArray(0);
 
@@ -221,65 +227,98 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 
-	if (key == GLFW_KEY_UP && action == GLFW_PRESS) {
-		rotateUp = true;
+	if (key == GLFW_KEY_4 && action == GLFW_PRESS) { // Seleciona piramide 1
+		isPyramid1Selected = true;
+		isPyramid2Selected = false;
+		isPyramid3Selected = false;
+	}
+	if (key == GLFW_KEY_5 && action == GLFW_PRESS) { // Seleciona piramide 2
+		isPyramid1Selected = false;
+		isPyramid2Selected = true;
+		isPyramid3Selected = false;
+	}
+	if (key == GLFW_KEY_6 && action == GLFW_PRESS) { // Seleciona piramide 3
+		isPyramid1Selected = false;
+		isPyramid2Selected = false;
+		isPyramid3Selected = true;
+	}
+	if (key == GLFW_KEY_UP && action == GLFW_PRESS) { // Rotação no eixo X
+		rotateUp = !rotateUp;
 		rotateDown = false;
 		rotateLeft = false;
 		rotateRight = false;
 		rotate1 = false;
 		rotate2 = false;
 	}
-	if (key == GLFW_KEY_DOWN && action == GLFW_PRESS) {
+	if (key == GLFW_KEY_DOWN && action == GLFW_PRESS) { // Rotação no eixo X
 		rotateUp = false;
-		rotateDown = true;
+		rotateDown = !rotateDown;
 		rotateLeft = false;
 		rotateRight = false;
 		rotate1 = false;
 		rotate2 = false;
 	}
-	if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
+	if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) { // Rotação no eixo Y
 		rotateUp = false;
 		rotateDown = false;
-		rotateLeft = true;
+		rotateLeft = !rotateLeft;
 		rotateRight = false;
 		rotate1 = false;
 		rotate2 = false;
 	}
-	if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
+	if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) { // Rotação no eixo Y
 		rotateUp = false;
 		rotateDown = false;
 		rotateLeft = false;
-		rotateRight = true;
+		rotateRight = !rotateRight;
 		rotate1 = false;
 		rotate2 = false;
 	}
-	if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
+	if (key == GLFW_KEY_1 && action == GLFW_PRESS) { // Rotação no eixo Z
 		rotateUp = false;
 		rotateDown = false;
 		rotateLeft = false;
 		rotateRight = false;
-		rotate1 = true;
+		rotate1 = !rotate1;
 		rotate2 = false;
 	}
-	if (key == GLFW_KEY_2 && action == GLFW_PRESS) {
+	if (key == GLFW_KEY_2 && action == GLFW_PRESS) { // Rotação no eixo Z
 		rotateUp = false;
 		rotateDown = false;
 		rotateLeft = false;
 		rotateRight = false;
 		rotate1 = false;
-		rotate2 = true;
+		rotate2 = !rotate2;
 	}
 	if (key == GLFW_KEY_Z && action == GLFW_PRESS) { // Aumenta a escala
-        scale1 += 0.1f; 
+        if (isPyramid1Selected) scale1 += 0.1f;
+		if (isPyramid2Selected) scale2 += 0.1f;
+		if (isPyramid3Selected) scale3 += 0.1f;
     }
 	if (key == GLFW_KEY_X && action == GLFW_PRESS) { // Diminui a escala e impede valores negativos
-        scale1 = glm::max(0.1f, scale1 - 0.1f); 
+        if (isPyramid1Selected) scale1 = glm::max(0.1f, scale1 - 0.1f);
+		if (isPyramid2Selected) scale2 = glm::max(0.1f, scale2 - 0.1f);
+		if (isPyramid3Selected) scale3 = glm::max(0.1f, scale3 - 0.1f);
     }
-	if (key == GLFW_KEY_I && action == GLFW_PRESS) { // Move no eixo Z (para frente)
-		z += 0.2f;
+	if (key == GLFW_KEY_J && action == GLFW_PRESS) { // Translação no eixo X (para o lado esquerdo)
+		if (isPyramid1Selected) coord_x1 -= 0.2f;
+		if (isPyramid2Selected) coord_x2 -= 0.2f;
+		if (isPyramid3Selected) coord_x3 -= 0.2f;
 	}
-	if (key == GLFW_KEY_J && action == GLFW_PRESS) { // Move no eixo Z (para trás)
-		z -= 0.2f;
+	if (key == GLFW_KEY_L && action == GLFW_PRESS) { // Translação no eixo X (para o lado direito)
+		if (isPyramid1Selected) coord_x1 += 0.2f;
+		if (isPyramid2Selected) coord_x2 += 0.2f;
+		if (isPyramid3Selected) coord_x3 += 0.2f;
+	}
+	if (key == GLFW_KEY_I && action == GLFW_PRESS) { // Translação no eixo Z (para frente)
+		if (isPyramid1Selected) coord_z1 -= 0.2f;
+		if (isPyramid2Selected) coord_z2 -= 0.2f;
+		if (isPyramid3Selected) coord_z3 -= 0.2f;
+	}
+	if (key == GLFW_KEY_K && action == GLFW_PRESS) { // Translação no eixo Z (para trás)
+		if (isPyramid1Selected) coord_z1 += 0.2f;
+		if (isPyramid2Selected) coord_z2 += 0.2f;
+		if (isPyramid3Selected) coord_z3 += 0.2f;
 	}
 }
 
@@ -314,6 +353,7 @@ int setupShader()
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
 	glCompileShader(vertexShader);
+
 	// Checando erros de compilação (exibição via log no terminal)
 	GLint success;
 	GLchar infoLog[512];

@@ -1,21 +1,11 @@
 #ifndef OBJECT3D_HPP
 #define OBJECT3D_HPP
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <GLFW/glfw3.h>
-#include <glad/glad.h>
-#include <tuple>
-#include <string>
-
-#include <assert.h>
 #include <fstream>
 #include <sstream>
 #include <vector>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-#include <cmath>
 #include <iostream>
 using namespace std;
 
@@ -25,23 +15,23 @@ public:
     GLuint texID;
     int numVertices;
 
-    glm::vec3 posicao;
-    glm::vec3 escala;
-    float anguloRotacaoX;
+    glm::vec3 objectPosition;
+    glm::vec3 objectScale;
 
+    // Struct para armazenamento dos vértices do .obj
     struct Vertex {
         glm::vec3 position;
         glm::vec3 normal;
         glm::vec2 texCoords;
     };
     vector<Vertex> vertices;
-    vector<unsigned int> indices;
+    vector<unsigned int> indexes;
     vector<glm::vec2> tempTexCoords;
 
     // Construtor
-    Object3D(const std::string& caminhoOBJ, glm::vec3 pos, glm::vec3 escalaInicial)
-        : posicao(pos), escala(escalaInicial), anguloRotacaoX(0.0f) {
-        std::tie(VAO, texID) = loadOBJ(caminhoOBJ, numVertices);
+    Object3D(const std::string& objPath, glm::vec3 initPosition, glm::vec3 initScale)
+        : objectPosition(initPosition), objectScale(initScale) {
+        std::tie(VAO, texID) = loadOBJ(objPath, numVertices);
     }
 
     // Destrutor para desalocar os buffers
@@ -50,38 +40,44 @@ public:
         glDeleteTextures(1, &texID);
     }
 
-    glm::mat4 getModelMatrix(float angle, bool rotateUp, bool rotateDown, bool rotateLeft, bool rotateRight, bool rotate1, bool rotate2) {
+    // Criação do model com translação, rotação e escala
+    glm::mat4 getModelMatrix(float angle, bool isSelected, bool rotateUp, bool rotateDown, bool rotateLeft, bool rotateRight, bool rotate1, bool rotate2) {
         glm::mat4 model = glm::mat4(1);
-        model = glm::translate(model, posicao);
+        model = glm::translate(model, objectPosition);
 
-        if (rotateUp) {
-            model = glm::rotate(model, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
-        } else if (rotateDown) {
-            model = glm::rotate(model, angle, glm::vec3(1.0f, 0.0f, 0.0f));
-        } else if (rotateLeft) {
-            model = glm::rotate(model, angle, glm::vec3(0.0f, -1.0f, 0.0f));
-        } else if (rotateRight) {
-            model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-        } else if (rotate1) {
-            model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
-        } else if (rotate2) {
-            model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, -1.0f));
+        if (isSelected) {
+            if (rotateUp) {
+                model = glm::rotate(model, angle, glm::vec3(-1.0f, 0.0f, 0.0f));
+            } else if (rotateDown) {
+                model = glm::rotate(model, angle, glm::vec3(1.0f, 0.0f, 0.0f));
+            } else if (rotateLeft) {
+                model = glm::rotate(model, angle, glm::vec3(0.0f, -1.0f, 0.0f));
+            } else if (rotateRight) {
+                model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+            } else if (rotate1) {
+                model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, 1.0f));
+            } else if (rotate2) {
+                model = glm::rotate(model, angle, glm::vec3(0.0f, 0.0f, -1.0f));
+            }
         }
 
-        // Rotação inicial padrão
-        model = glm::rotate(model, glm::radians(anguloRotacaoX), glm::vec3(1.0f, 0.0f, 0.0f));
-        model = glm::scale(model, escala);
+        model = glm::scale(model, objectScale);
         return model;
     }
 
-    void draw(GLuint modelLoc, float angle, bool rotateUp, bool rotateDown, bool rotateLeft, bool rotateRight, bool rotate1, bool rotate2) {
+    // Desenho com textura
+    void draw(GLuint modelLoc, glm::vec3 position, float angle, float scale, bool isSelected, bool rotateUp, bool rotateDown, bool rotateLeft, bool rotateRight, bool rotate1, bool rotate2) {
         glActiveTexture(GL_TEXTURE0);
         glBindVertexArray(VAO);
         glBindTexture(GL_TEXTURE_2D, texID);
 
-        glm::mat4 model = getModelMatrix(angle, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
+        objectScale = glm::vec3(scale);
+        objectPosition = glm::vec3(position);
+
+        glm::mat4 model = getModelMatrix(angle, isSelected, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
         glDrawArrays(GL_TRIANGLES, 0, numVertices);
+        if (isSelected) glDrawArrays(GL_POINTS, 0, numVertices);
     }
 
     // Função para ler e carregar o .obj, retorna o VAO e sua textura
@@ -126,7 +122,7 @@ public:
                     vertex.normal = tempNormals[nIdx[i] - 1];
                     vertex.texCoords = tempTexCoords[tIdx[i] - 1];
                     vertices.push_back(vertex);
-                    indices.push_back(vertices.size() - 1);
+                    indexes.push_back(vertices.size() - 1);
                 }
             }
         }
