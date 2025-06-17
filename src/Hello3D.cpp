@@ -17,6 +17,14 @@ using namespace std;
 
 #include "Camera.h"
 #include "Object3D.h"
+#include "BezierCurve.h"
+
+// Camera global e posição inicial da câmera
+Camera camera(
+    glm::vec3(-3.56f, 0.45f, 2.55f),
+    glm::vec3(0.0f, 1.0f, 0.0f),
+    -30.0f, 0.0f
+);
 
 // Protótipo das funções de callback de teclado e mouse
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -24,8 +32,6 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 // Protótipos das funções
 int setupShader();
-void initializeBernsteinMatrix(glm::mat4 &M);
-void generateBezierCurvePoints(Curve &curve, int numPoints);
 
 // Vertex Shader (em GLSL):
 const GLchar* vertexShaderSource = R"(
@@ -99,10 +105,11 @@ const GLuint WIDTH = 1000, HEIGHT = 1000;
 float coord_x1 = -1.0f, coord_x2 = 0.0f, coord_x3 = 1.2f, coord_x4 = 1.2f;
 float coord_y1 = 0.0f, coord_y2 = 0.0f, coord_y3 = 0.0f, coord_y4 = 0.0f;
 float coord_z1 = 0.0f, coord_z2 = 0.0f, coord_z3 = 0.0f, coord_z4 = 1.0f;
+glm::vec3 coordsCubo(1.2f, 0.0f, 1.0f);
 
 // Seleção e valores iniciais de rotações, escala, iluminação
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
-float scale1 = 0.5, scale2 = 0.9f, scale3 = 0.7f, scale4 = 0.2f;
+float scale1 = 0.5, scale2 = 0.9f, scale3 = 0.7f, scale4 = 0.1f;
 float ka = 0.1f, kd = 0.8f, ks = 0.6f, brightness = 60.0f;
 bool isPyramid1Selected=true, isPyramid2Selected=false, isPyramid3Selected=false;
 
@@ -114,19 +121,6 @@ float lastFrame = 0.0f;
 float lastX = WIDTH / 2.0f;
 float lastY = HEIGHT / 2.0f;
 bool firstMouse = true;
-
-// Camera global e posição inicial da câmera
-Camera camera(
-    glm::vec3(-3.56f, 0.45f, 2.55f),
-    glm::vec3(0.0f, 1.0f, 0.0f),
-    -30.0f, 0.0f
-);
-
-struct Curve {
-    std::vector<glm::vec3> controlPoints;
-    std::vector<glm::vec3> curvePoints;
-    glm::mat4 M; // Bernstein matrix
-};
 
 // Função MAIN
 int main()
@@ -166,7 +160,7 @@ int main()
 	Object3D piramide1("../assets/Modelos3D/Piramide.obj", glm::vec3(coord_x1, coord_y1, coord_z1), glm::vec3(scale1));
 	Object3D piramide2("../assets/Modelos3D/Piramide.obj", glm::vec3(coord_x2, coord_y2, coord_z2), glm::vec3(scale2));
 	Object3D piramide3("../assets/Modelos3D/Piramide.obj", glm::vec3(coord_x3, coord_y3, coord_z3), glm::vec3(scale3));
-	Object3D cubo("../assets/Modelos3D/Cubo.obj", glm::vec3(coord_x4, coord_y4, coord_z4), glm::vec3(scale4));
+	Object3D planeta("../assets/Modelos3D/Planeta.obj", glm::vec3(coord_x4, coord_y4, coord_z4), glm::vec3(scale4));
 
 	// Enviar a variável que armazenará o buffer de textura no fragment shader
 	glUniform1i(glGetUniformLocation(shaderID, "tex_buffer"), 0);
@@ -182,17 +176,16 @@ int main()
 	glActiveTexture(GL_TEXTURE0);
 	glEnable(GL_DEPTH_TEST);
 
-	Curve bezierCurve;
-	bezierCurve.controlPoints = {
-		glm::vec3(1.2f, 0.0f, 1.0f),   // Ponto inicial
-		glm::vec3(2.0f, 2.0f, 0.0f),   // Controle 1
-		glm::vec3(-2.0f, 2.0f, 0.0f),  // Controle 2
-		glm::vec3(0.0f, 0.0f, -1.0f)   // Ponto final
+	// Criação da curve de Bezier para movimentação
+	std::vector<glm::vec3> bezierControlPoints = {
+		glm::vec3(1.2f, 0.0f, 1.0f),
+		glm::vec3(2.0f, 2.0f, 0.0f),
+		glm::vec3(-2.0f, 2.0f, 0.0f),
+		glm::vec3(0.0f, 0.0f, -1.0f)
 	};
-	generateBezierCurvePoints(bezierCurve, 100); // Gera 100 pontos na curva
-	int bezierIndex = 0;
-	// PASSO 4
-
+	// 100 pontos por segmento com velocidade de 0.1s por segmento
+	Bezier bezierCurve(bezierControlPoints, 100, 0.1f);
+    
 	// Loop da aplicação - "game loop"
 	while (!glfwWindowShouldClose(window))
 	{
@@ -226,11 +219,14 @@ int main()
 		glPointSize(20);
 		float angle = (GLfloat)glfwGetTime();
 
+		// Atualiza posição do cubo de acordo com a curva de Bezier
+		coordsCubo = bezierCurve.update(deltaTime);
+		
 		// Desenho das piramides
 		piramide1.draw(modelLoc, glm::vec3(coord_x1, coord_y1, coord_z1), angle, scale1, isPyramid1Selected, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
 		piramide2.draw(modelLoc, glm::vec3(coord_x2, coord_y2, coord_z2), angle, scale2, isPyramid2Selected, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
 		piramide3.draw(modelLoc, glm::vec3(coord_x3, coord_y3, coord_z3), angle, scale3, isPyramid3Selected, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
-		cubo.draw(modelLoc, glm::vec3(coord_x4, coord_y4, coord_z4), angle, scale4, false, false, false, false, false, false, false);
+		planeta.draw(modelLoc, coordsCubo, angle, scale4, false, false, false, false, false, false, false);
 
 		glBindVertexArray(0);
 
@@ -365,40 +361,6 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.updateMouseScroll(static_cast<float>(yoffset));
-}
-
-void initializeBernsteinMatrix(glm::mat4 &M) {
-    M = glm::mat4(
-        -1,  3, -3, 1,
-         3, -6,  3, 0,
-        -3,  3,  0, 0,
-         1,  0,  0, 0
-    );
-}
-
-void generateBezierCurvePoints(Curve &curve, int numPoints) {
-    curve.curvePoints.clear();
-    initializeBernsteinMatrix(curve.M);
-
-    float piece = 1.0f / numPoints;
-    float t;
-
-    for (int i = 0; i < curve.controlPoints.size() - 3; i += 3) {
-        for (int j = 0; j < numPoints; j++) {
-            t = j * piece;
-            glm::vec4 T(pow(t,3), t*t, t, 1.0f);
-
-            glm::vec3 P0 = curve.controlPoints[i];
-            glm::vec3 P1 = curve.controlPoints[i + 1];
-            glm::vec3 P2 = curve.controlPoints[i + 2];
-            glm::vec3 P3 = curve.controlPoints[i + 3];
-
-            glm::mat4x3 G(P0, P1, P2, P3);
-
-            glm::vec3 point = G * curve.M * T;
-            curve.curvePoints.push_back(point);
-        }
-    }
 }
 
 // Retorna o identificador do programa de shader

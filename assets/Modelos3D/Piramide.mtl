@@ -1,7 +1,9 @@
-# Blender 4.3.0 MTL File: 'None'
-# www.blender.org
-newmtl pyramidMaterial
+newmtl piramideMaterial
 map_Kd piramide.png
+ka 0.100000
+kd 0.800000
+ks 0.600000
+brightness 60.00000
 
 #newmtl Material.001
 #Ns 233.659760

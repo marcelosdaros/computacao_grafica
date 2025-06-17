@@ -132,7 +132,7 @@ public:
         GLuint texID;
 
         // Carregamento da textura presente no arquivo mtl
-        string textureFile = loadMTL("../assets/Modelos3D/" + mtlFile);
+        string textureFile = loadTextureMTL("../assets/Modelos3D/" + mtlFile);
         texID = loadTexture("../assets/textures/" + textureFile, texWidth, texHeight);
 
         // Vetor para armazenamento dos vértices
@@ -214,7 +214,7 @@ public:
     }
 
     // Função para carregar o material/textura
-    string loadMTL(const string& mtlPath) {
+    string loadTextureMTL(const string& mtlPath) {
         ifstream file(mtlPath);
         string line, textureFile;
 
