@@ -24,9 +24,6 @@ public:
         glm::vec3 normal;
         glm::vec2 texCoords;
     };
-    vector<Vertex> vertices;
-    vector<unsigned int> indexes;
-    vector<glm::vec2> tempTexCoords;
 
     // Construtor
     Object3D(const std::string& objPath, glm::vec3 initPosition, glm::vec3 initScale)
@@ -82,6 +79,10 @@ public:
 
     // Função para ler e carregar o .obj, retorna o VAO e sua textura
     std::pair<GLuint, GLuint> loadOBJ(const string& path, int &nVertices) {
+        std::vector<Vertex> vertices;
+        std::vector<unsigned int> indexes;
+        std::vector<glm::vec2> tempTexCoords;
+
         string line;
         vector<glm::vec3> tempPositions, tempNormals;
         string mtlFile;

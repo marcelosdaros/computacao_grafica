@@ -1,6 +1,6 @@
-mtllib planeta.mtl
-usemtl planetaMaterial
-o Planeta
+mtllib lua.mtl
+usemtl luaMaterial
+o Lua
 #482 vertices, 960 faces
 v 0.0000000e+0 -1.00000000 0.0000000e+0
 v 3.8060000e-2 0.98078500 -0.19134200

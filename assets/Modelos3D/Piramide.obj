@@ -1,4 +1,4 @@
-mtllib Piramide.mtl
+mtllib piramide.mtl
 usemtl piramideMaterial
 o Piramide
 v -0.500000 0.000000 0.500000

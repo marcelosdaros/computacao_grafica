@@ -1,0 +1,36 @@
+{
+  "objects": [
+    {
+      "name": "piramide1",
+      "model": "../assets/Modelos3D/Piramide.obj",
+      "x": -1.0,
+      "y": 0.0,
+      "z": 0.0,
+      "scale": 0.5
+    },
+    {
+      "name": "piramide2",
+      "model": "../assets/Modelos3D/Piramide.obj",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0,
+      "scale": 0.9
+    },
+    {
+      "name": "piramide3",
+      "model": "../assets/Modelos3D/Piramide.obj",
+      "x": 1.2,
+      "y": 0.0,
+      "z": 0.0,
+      "scale": 0.7
+    },
+    {
+      "name": "lua",
+      "model": "../assets/Modelos3D/Lua.obj",
+      "x": 1.2,
+      "y": 0.0,
+      "z": 1.0,
+      "scale": 0.1
+    }
+  ]
+}

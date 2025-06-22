@@ -1,5 +1,5 @@
-newmtl planetaMaterial
-map_Kd planeta.jpg
+newmtl luaMaterial
+map_Kd lua.jpg
 ka 0.100000
 kd 0.800000
 ks 0.600000

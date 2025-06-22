@@ -18,6 +18,10 @@ using namespace std;
 #include "Camera.h"
 #include "Object3D.h"
 #include "BezierCurve.h"
+#include "json.hpp"
+#include <fstream>
+#include <vector>
+using json = nlohmann::json;
 
 // Camera global e posição inicial da câmera
 Camera camera(
@@ -101,12 +105,6 @@ void main()
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 1000, HEIGHT = 1000;
 
-// Posição inicial das piramides
-float coord_x1 = -1.0f, coord_x2 = 0.0f, coord_x3 = 1.2f, coord_x4 = 1.2f;
-float coord_y1 = 0.0f, coord_y2 = 0.0f, coord_y3 = 0.0f, coord_y4 = 0.0f;
-float coord_z1 = 0.0f, coord_z2 = 0.0f, coord_z3 = 0.0f, coord_z4 = 1.0f;
-glm::vec3 coordsCubo(1.2f, 0.0f, 1.0f);
-
 // Seleção e valores iniciais de rotações, escala, iluminação
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
 float scale1 = 0.5, scale2 = 0.9f, scale3 = 0.7f, scale4 = 0.1f;
@@ -122,6 +120,10 @@ float lastX = WIDTH / 2.0f;
 float lastY = HEIGHT / 2.0f;
 bool firstMouse = true;
 
+std::vector<glm::vec3> objetosPosicoes;
+std::vector<float> objetosEscalas;
+std::vector<std::string> objetosModelPaths;
+
 // Função MAIN
 int main()
 {
@@ -131,6 +133,23 @@ int main()
 	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Trabalho GB -- Marcelo!", nullptr, nullptr);
 	glfwMakeContextCurrent(window);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+	// Identificação do arquivo de configuração dos objetos
+	std::ifstream configFile("../src/config.json");
+	json config;
+	configFile >> config;
+
+	// Leitura dos objetos 3D via config.json
+	for (const auto& obj : config["objects"]) {
+		std::string nome = obj["name"];
+		std::string modelPath = obj["model"];
+		glm::vec3 pos(obj["x"], obj["y"], obj["z"]);
+		float escala = obj["scale"];
+
+		objetosModelPaths.push_back(modelPath);
+		objetosPosicoes.push_back(pos);
+		objetosEscalas.push_back(escala);
+	}
 
 	// Fazendo o registro da função de callback para a janela GLFW
 	glfwSetKeyCallback(window, key_callback);
@@ -157,10 +176,10 @@ int main()
 	GLint modelLoc = glGetUniformLocation(shaderID, "model");
 
 	// Criação dos objetos 3D (piramides)
-	Object3D piramide1("../assets/Modelos3D/Piramide.obj", glm::vec3(coord_x1, coord_y1, coord_z1), glm::vec3(scale1));
-	Object3D piramide2("../assets/Modelos3D/Piramide.obj", glm::vec3(coord_x2, coord_y2, coord_z2), glm::vec3(scale2));
-	Object3D piramide3("../assets/Modelos3D/Piramide.obj", glm::vec3(coord_x3, coord_y3, coord_z3), glm::vec3(scale3));
-	Object3D planeta("../assets/Modelos3D/Planeta.obj", glm::vec3(coord_x4, coord_y4, coord_z4), glm::vec3(scale4));
+	Object3D piramide1(objetosModelPaths[0], objetosPosicoes[0], glm::vec3(objetosEscalas[0]));
+	Object3D piramide2(objetosModelPaths[1], objetosPosicoes[1], glm::vec3(objetosEscalas[1]));
+	Object3D piramide3(objetosModelPaths[2], objetosPosicoes[2], glm::vec3(objetosEscalas[2]));
+	Object3D lua(objetosModelPaths[3], objetosPosicoes[3], glm::vec3(objetosEscalas[3]));
 
 	// Enviar a variável que armazenará o buffer de textura no fragment shader
 	glUniform1i(glGetUniformLocation(shaderID, "tex_buffer"), 0);
@@ -177,7 +196,7 @@ int main()
 	glActiveTexture(GL_TEXTURE0);
 	glEnable(GL_DEPTH_TEST);
 
-	// Criação da curve de Bezier para movimentação
+	// Criação da curva de Bezier para movimentação
 	std::vector<glm::vec3> bezierControlPoints = {
 		glm::vec3(1.2f, 0.0f, 1.0f),
 		glm::vec3(2.0f, 2.0f, 0.0f),
@@ -221,20 +240,19 @@ int main()
 		float angle = (GLfloat)glfwGetTime();
 
 		// Atualiza posição do cubo de acordo com a curva de Bezier
-		coordsCubo = bezierCurve.update(deltaTime);
+		objetosPosicoes[3] = bezierCurve.update(deltaTime);
 		
 		// Desenho das piramides
-		piramide1.draw(modelLoc, glm::vec3(coord_x1, coord_y1, coord_z1), angle, scale1, isPyramid1Selected, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
-		piramide2.draw(modelLoc, glm::vec3(coord_x2, coord_y2, coord_z2), angle, scale2, isPyramid2Selected, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
-		piramide3.draw(modelLoc, glm::vec3(coord_x3, coord_y3, coord_z3), angle, scale3, isPyramid3Selected, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
-		planeta.draw(modelLoc, coordsCubo, angle, scale4, false, false, false, false, false, false, false);
+		piramide1.draw(modelLoc, objetosPosicoes[0], angle, objetosEscalas[0], isPyramid1Selected, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
+		piramide2.draw(modelLoc, objetosPosicoes[1], angle, objetosEscalas[1], isPyramid2Selected, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
+		piramide3.draw(modelLoc, objetosPosicoes[2], angle, objetosEscalas[2], isPyramid3Selected, rotateUp, rotateDown, rotateLeft, rotateRight, rotate1, rotate2);
+		lua.draw(modelLoc, objetosPosicoes[3], angle, objetosEscalas[3], false, false, false, false, false, false, false);
 
 		glBindVertexArray(0);
 
 		// Troca os buffers da tela
 		glfwSwapBuffers(window);
 	}
-
 	glfwTerminate();
 	return 0;
 }
@@ -309,35 +327,35 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		rotate2 = !rotate2;
 	}
 	if (key == GLFW_KEY_Z && action == GLFW_PRESS) { // Aumenta a escala
-        if (isPyramid1Selected) scale1 += 0.1f;
-		if (isPyramid2Selected) scale2 += 0.1f;
-		if (isPyramid3Selected) scale3 += 0.1f;
+        if (isPyramid1Selected) objetosEscalas[0] += 0.1f;
+		if (isPyramid2Selected) objetosEscalas[1] += 0.1f;
+		if (isPyramid3Selected) objetosEscalas[2] += 0.1f;
     }
 	if (key == GLFW_KEY_X && action == GLFW_PRESS) { // Diminui a escala e impede valores negativos
-        if (isPyramid1Selected) scale1 = glm::max(0.1f, scale1 - 0.1f);
-		if (isPyramid2Selected) scale2 = glm::max(0.1f, scale2 - 0.1f);
-		if (isPyramid3Selected) scale3 = glm::max(0.1f, scale3 - 0.1f);
+        if (isPyramid1Selected) objetosEscalas[0] = glm::max(0.1f, objetosEscalas[0] - 0.1f);
+		if (isPyramid2Selected) objetosEscalas[1] = glm::max(0.1f, objetosEscalas[1] - 0.1f);
+		if (isPyramid3Selected) objetosEscalas[2] = glm::max(0.1f, objetosEscalas[2] - 0.1f);
     }
-	if (key == GLFW_KEY_J && action == GLFW_PRESS) { // Translação no eixo X (para o lado esquerdo)
-		if (isPyramid1Selected) coord_x1 -= 0.2f;
-		if (isPyramid2Selected) coord_x2 -= 0.2f;
-		if (isPyramid3Selected) coord_x3 -= 0.2f;
-	}
-	if (key == GLFW_KEY_L && action == GLFW_PRESS) { // Translação no eixo X (para o lado direito)
-		if (isPyramid1Selected) coord_x1 += 0.2f;
-		if (isPyramid2Selected) coord_x2 += 0.2f;
-		if (isPyramid3Selected) coord_x3 += 0.2f;
-	}
-	if (key == GLFW_KEY_I && action == GLFW_PRESS) { // Translação no eixo Z (para frente)
-		if (isPyramid1Selected) coord_z1 -= 0.2f;
-		if (isPyramid2Selected) coord_z2 -= 0.2f;
-		if (isPyramid3Selected) coord_z3 -= 0.2f;
-	}
-	if (key == GLFW_KEY_K && action == GLFW_PRESS) { // Translação no eixo Z (para trás)
-		if (isPyramid1Selected) coord_z1 += 0.2f;
-		if (isPyramid2Selected) coord_z2 += 0.2f;
-		if (isPyramid3Selected) coord_z3 += 0.2f;
-	}
+	// if (key == GLFW_KEY_J && action == GLFW_PRESS) { // Translação no eixo X (para o lado esquerdo)
+	// 	if (isPyramid1Selected) coord_x1 -= 0.2f;
+	// 	if (isPyramid2Selected) coord_x2 -= 0.2f;
+	// 	if (isPyramid3Selected) coord_x3 -= 0.2f;
+	// }
+	// if (key == GLFW_KEY_L && action == GLFW_PRESS) { // Translação no eixo X (para o lado direito)
+	// 	if (isPyramid1Selected) coord_x1 += 0.2f;
+	// 	if (isPyramid2Selected) coord_x2 += 0.2f;
+	// 	if (isPyramid3Selected) coord_x3 += 0.2f;
+	// }
+	// if (key == GLFW_KEY_I && action == GLFW_PRESS) { // Translação no eixo Z (para frente)
+	// 	if (isPyramid1Selected) coord_z1 -= 0.2f;
+	// 	if (isPyramid2Selected) coord_z2 -= 0.2f;
+	// 	if (isPyramid3Selected) coord_z3 -= 0.2f;
+	// }
+	// if (key == GLFW_KEY_K && action == GLFW_PRESS) { // Translação no eixo Z (para trás)
+	// 	if (isPyramid1Selected) coord_z1 += 0.2f;
+	// 	if (isPyramid2Selected) coord_z2 += 0.2f;
+	// 	if (isPyramid3Selected) coord_z3 += 0.2f;
+	// }
 }
 
 // Função de callback do mouse
