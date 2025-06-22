@@ -230,5 +230,32 @@ public:
         }
         return textureFile;
     }
+
+    // Função para carregar os parametros de iluminação
+    std::tuple<float, float, float, float> loadLightingParamsFromMTL(const string& mtlPath) {
+        std::ifstream file(mtlPath);
+        std::string line;
+
+        // Valores padrão
+        float ka = 0.0f, kd = 0.0f, ks = 0.0f, brightness = 1.0f;
+
+        // Encontra e retorna os parametros ka, kd, ks, brightness
+        while (std::getline(file, line)) {
+            std::istringstream iss(line);
+            std::string prefix;
+            iss >> prefix;
+
+            if (prefix == "ka") {
+                iss >> ka;
+            } else if (prefix == "kd") {
+                iss >> kd;
+            } else if (prefix == "ks") {
+                iss >> ks;
+            } else if (prefix == "brightness") {
+                iss >> brightness;
+            }
+        }
+        return std::make_tuple(ka, kd, ks, brightness);
+    }
 };
 #endif

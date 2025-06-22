@@ -1,2 +1,6 @@
 newmtl planetaMaterial
 map_Kd planeta.jpg
+ka 0.100000
+kd 0.800000
+ks 0.600000
+brightness 60.00000

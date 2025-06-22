@@ -110,7 +110,7 @@ glm::vec3 coordsCubo(1.2f, 0.0f, 1.0f);
 // Seleção e valores iniciais de rotações, escala, iluminação
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
 float scale1 = 0.5, scale2 = 0.9f, scale3 = 0.7f, scale4 = 0.1f;
-float ka = 0.1f, kd = 0.8f, ks = 0.6f, brightness = 60.0f;
+float ka = 0.0, kd = 0.0f, ks = 0.0f, brightness = 1.0f;
 bool isPyramid1Selected=true, isPyramid2Selected=false, isPyramid3Selected=false;
 
 // Variaveis para controle de movimentação da camera
@@ -167,6 +167,7 @@ int main()
 
 	// Enviar as variáveis que armazenarão os buffers de iluminação (incluindo ka, kd, ks) no fragment shader
 	glUniform3f(glGetUniformLocation(shaderID, "lightPos"), 1.0f, 2.0f, 1.0f);
+	std::tie(ka, kd, ks, brightness) = piramide1.loadLightingParamsFromMTL("../assets/Modelos3D/Piramide.mtl");
 	glUniform1f(glGetUniformLocation(shaderID, "ka"), ka);
 	glUniform1f(glGetUniformLocation(shaderID, "kd"), kd);
 	glUniform1f(glGetUniformLocation(shaderID, "ks"), ks);
