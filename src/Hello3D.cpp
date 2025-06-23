@@ -27,6 +27,7 @@ using namespace std;
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Camera.h"
+#include "BezierCurve.h"
 
 // Protótipo das funções de callback de teclado e cursor
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -120,7 +121,7 @@ const GLuint WIDTH = 1000, HEIGHT = 1000;
 
 float x = 0.0f;							   // os 2 cubos iniciam com x = 0
 float positiveY = 0.4f, negativeY = -0.4f; // positiveY = inicia o eixo Y com +0.4; negativeY = inicia o eixo Y com -0.4
-float z = 0.0f;						       // os 2 cubos iniciam com z = -3
+float z = 0.0f;						       // os 2 cubos iniciam com z = 0
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
 float scale = 0.5f;
 float ka = 0.1f, kd = 0.8f, ks = 0.6f, brightness = 60.0f;
@@ -212,6 +213,25 @@ int main()
 	glActiveTexture(GL_TEXTURE0);
 	glEnable(GL_DEPTH_TEST);
 
+	// Criação de curvas de Bezier para movimentação de cada cubo
+	std::vector<glm::vec3> bezierControlPoints1 = {
+		glm::vec3(0.0f, 0.4f, 0.0f),    // Ponto inicial (posição inicial do cubo 1)
+		glm::vec3(1.5f, 1.5f, 0.0f),    // Controle para puxar para cima e direita
+		glm::vec3(-1.5f, 1.5f, 0.0f),   // Controle para puxar para cima e esquerda
+		glm::vec3(0.0f, 0.4f, 0.0f)     // Retorno ao ponto inicial (movimento cíclico fechado)
+	};
+
+	std::vector<glm::vec3> bezierControlPoints2 = {
+		glm::vec3(0.0f, -0.4f, 0.0f),   // Ponto inicial (posição inicial do cubo 2)
+		glm::vec3(-1.5f, -1.5f, 0.0f),  // Puxa para baixo e esquerda
+		glm::vec3(1.5f, -1.5f, 0.0f),   // Puxa para baixo e direita
+		glm::vec3(0.0f, -0.4f, 0.0f)    // Volta ao início
+	};
+	
+	// 100 pontos por segmento com velocidade de 0.1s por segmento
+	Bezier bezierCurve1(bezierControlPoints1, 100, 0.1f);
+	Bezier bezierCurve2(bezierControlPoints2, 100, 0.1f);
+
 	// Loop da aplicação - "game loop"
 	while (!glfwWindowShouldClose(window))
 	{
@@ -220,11 +240,15 @@ int main()
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
+		// Atualiza posições dos cubos pela curva Bezier
+		glm::vec3 positionCube1 = bezierCurve1.update(deltaTime);
+		glm::vec3 positionCube2 = bezierCurve2.update(deltaTime);
+
 		// Instanciação dos cubos
 		model1 = glm::mat4(1);
-		model1 = glm::translate(model1, glm::vec3(x, positiveY, z)); // Move cubo 1 para cima
+		model1 = glm::translate(model1, positionCube1); // Move cubo 1 para cima
 		model2 = glm::mat4(1);
-		model2 = glm::translate(model2, glm::vec3(x, negativeY, z)); // Move cubo 1 para baixo
+		model2 = glm::translate(model2, positionCube2); // Move cubo 1 para baixo
 
 		// Verifica se houveram eventos de input e chama as funções de callback
 		glfwPollEvents();
