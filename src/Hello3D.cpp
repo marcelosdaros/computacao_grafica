@@ -1,9 +1,4 @@
-/* Hello Triangle - Marcelo Daros */
-// Configuração do cmake:
-// Ctrl + Shift + P > CMake: Scan for kit
-// Ctrl + Shift + P > CMake: Select a kit
-// Ctrl + Shift + P > CMake: Configure
-// No terminal: cmake --build . > ./Hello3D.exe
+/* Trabalho GB - Marcelo Daros */
 
 using namespace std;
 // GLAD
@@ -105,9 +100,8 @@ void main()
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 1000, HEIGHT = 1000;
 
-// Seleção e valores iniciais de rotações, escala, iluminação
+// Seleção e valores iniciais de rotações e iluminação
 bool rotateUp=false, rotateDown=false, rotateLeft=false, rotateRight=false, rotate1=false, rotate2=false;
-float scale1 = 0.5, scale2 = 0.9f, scale3 = 0.7f, scale4 = 0.1f;
 float ka = 0.0, kd = 0.0f, ks = 0.0f, brightness = 1.0f;
 bool isPyramid1Selected=true, isPyramid2Selected=false, isPyramid3Selected=false;
 
@@ -120,6 +114,7 @@ float lastX = WIDTH / 2.0f;
 float lastY = HEIGHT / 2.0f;
 bool firstMouse = true;
 
+// Variaveis para armazenamento dos objetos 3D
 std::vector<glm::vec3> objetosPosicoes;
 std::vector<float> objetosEscalas;
 std::vector<std::string> objetosModelPaths;
@@ -175,7 +170,7 @@ int main()
 	GLint viewLoc = glGetUniformLocation(shaderID, "view");
 	GLint modelLoc = glGetUniformLocation(shaderID, "model");
 
-	// Criação dos objetos 3D (piramides)
+	// Criação dos objetos 3D (piramides e lua)
 	Object3D piramide1(objetosModelPaths[0], objetosPosicoes[0], glm::vec3(objetosEscalas[0]));
 	Object3D piramide2(objetosModelPaths[1], objetosPosicoes[1], glm::vec3(objetosEscalas[1]));
 	Object3D piramide3(objetosModelPaths[2], objetosPosicoes[2], glm::vec3(objetosEscalas[2]));
@@ -336,26 +331,26 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		if (isPyramid2Selected) objetosEscalas[1] = glm::max(0.1f, objetosEscalas[1] - 0.1f);
 		if (isPyramid3Selected) objetosEscalas[2] = glm::max(0.1f, objetosEscalas[2] - 0.1f);
     }
-	// if (key == GLFW_KEY_J && action == GLFW_PRESS) { // Translação no eixo X (para o lado esquerdo)
-	// 	if (isPyramid1Selected) coord_x1 -= 0.2f;
-	// 	if (isPyramid2Selected) coord_x2 -= 0.2f;
-	// 	if (isPyramid3Selected) coord_x3 -= 0.2f;
-	// }
-	// if (key == GLFW_KEY_L && action == GLFW_PRESS) { // Translação no eixo X (para o lado direito)
-	// 	if (isPyramid1Selected) coord_x1 += 0.2f;
-	// 	if (isPyramid2Selected) coord_x2 += 0.2f;
-	// 	if (isPyramid3Selected) coord_x3 += 0.2f;
-	// }
-	// if (key == GLFW_KEY_I && action == GLFW_PRESS) { // Translação no eixo Z (para frente)
-	// 	if (isPyramid1Selected) coord_z1 -= 0.2f;
-	// 	if (isPyramid2Selected) coord_z2 -= 0.2f;
-	// 	if (isPyramid3Selected) coord_z3 -= 0.2f;
-	// }
-	// if (key == GLFW_KEY_K && action == GLFW_PRESS) { // Translação no eixo Z (para trás)
-	// 	if (isPyramid1Selected) coord_z1 += 0.2f;
-	// 	if (isPyramid2Selected) coord_z2 += 0.2f;
-	// 	if (isPyramid3Selected) coord_z3 += 0.2f;
-	// }
+	if (key == GLFW_KEY_J && action == GLFW_PRESS) { // Translação no eixo X (para o lado esquerdo)
+		if (isPyramid1Selected) objetosPosicoes[0].x -= 0.2f;
+		if (isPyramid2Selected) objetosPosicoes[1].x -= 0.2f;
+		if (isPyramid3Selected) objetosPosicoes[2].x -= 0.2f;
+	}
+	if (key == GLFW_KEY_L && action == GLFW_PRESS) { // Translação no eixo X (para o lado direito)
+		if (isPyramid1Selected) objetosPosicoes[0].x += 0.2f;
+		if (isPyramid2Selected) objetosPosicoes[1].x += 0.2f;
+		if (isPyramid3Selected) objetosPosicoes[2].x += 0.2f;
+	}
+	if (key == GLFW_KEY_I && action == GLFW_PRESS) { // Translação no eixo Z (para frente)
+		if (isPyramid1Selected) objetosPosicoes[0].z -= 0.2f;
+		if (isPyramid2Selected) objetosPosicoes[1].z -= 0.2f;
+		if (isPyramid3Selected) objetosPosicoes[2].z -= 0.2f;
+	}
+	if (key == GLFW_KEY_K && action == GLFW_PRESS) { // Translação no eixo Z (para trás)
+		if (isPyramid1Selected) objetosPosicoes[0].z += 0.2f;
+		if (isPyramid2Selected) objetosPosicoes[1].z += 0.2f;
+		if (isPyramid3Selected) objetosPosicoes[2].z += 0.2f;
+	}
 }
 
 // Função de callback do mouse
