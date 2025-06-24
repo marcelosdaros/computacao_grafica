@@ -1,4 +1,4 @@
-/* Hello Triangle - Marcelo Daros */
+/* Hello Cube - Marcelo Daros */
 
 #include <iostream>
 #include <string>
