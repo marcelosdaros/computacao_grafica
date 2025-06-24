@@ -1,4 +1,4 @@
-/* Hello Triangle - Marcelo Daros */
+/* Hello Cubes - Marcelo Daros */
 // Configuração do cmake:
 // Ctrl + Shift + P > CMake: Scan for kit
 // Ctrl + Shift + P > CMake: Select a kit
@@ -111,12 +111,6 @@ int main()
 		std::cout << "Failed to initialize GLAD" << std::endl;
 	}
 
-	// Obtendo as informações de versão
-	const GLubyte* renderer = glGetString(GL_RENDERER); /* get renderer string */
-	const GLubyte* version = glGetString(GL_VERSION); /* version as a string */
-	cout << "Renderer: " << renderer << endl;
-	cout << "OpenGL version supported " << version << endl;
-
 	// Definindo as dimensões da viewport com as mesmas dimensões da janela da aplicação
 	int width, height;
 	glfwGetFramebufferSize(window, &width, &height);
@@ -156,10 +150,10 @@ int main()
 	glm::mat4 model2 = glm::mat4(1); //matriz identidade;
 	GLint modelLoc = glGetUniformLocation(shaderID, "model");
 
-	model1 = glm::rotate(model1, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	model1 = glm::rotate(model1, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model1));
 
-	model2 = glm::rotate(model2, /*(GLfloat)glfwGetTime()*/glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	model2 = glm::rotate(model2, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
 
 	glEnable(GL_DEPTH_TEST);
@@ -171,7 +165,7 @@ int main()
 		glfwPollEvents();
 
 		// Limpa o buffer de cor
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f); //cor de fundo
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glLineWidth(10);
@@ -450,7 +444,6 @@ std::pair<GLuint, GLuint> loadOBJ(const string& path, int &nVertices) {
 		vBuffer.push_back(v.texCoords.y);
 	}
 	
-	std::cout << "Gerando o buffer de geometria..." << std::endl;
 	GLuint VBO, VAO;
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
