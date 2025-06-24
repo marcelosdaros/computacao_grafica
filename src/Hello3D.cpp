@@ -1,9 +1,4 @@
 /* Hello Triangle - Marcelo Daros */
-// Configuração do cmake:
-// Ctrl + Shift + P > CMake: Scan for kit
-// Ctrl + Shift + P > CMake: Select a kit
-// Ctrl + Shift + P > CMake: Configure
-// No terminal: cmake --build . > ./Hello3D.exe
 
 #include <iostream>
 #include <string>
@@ -163,12 +158,6 @@ int main()
 		std::cout << "Failed to initialize GLAD" << std::endl;
 	}
 
-	// Obtendo as informações de versão
-	const GLubyte* renderer = glGetString(GL_RENDERER); /* get renderer string */
-	const GLubyte* version = glGetString(GL_VERSION); /* version as a string */
-	cout << "Renderer: " << renderer << endl;
-	cout << "OpenGL version supported " << version << endl;
-
 	// Definindo as dimensões da viewport com as mesmas dimensões da janela da aplicação
 	int width, height;
 	glfwGetFramebufferSize(window, &width, &height);
@@ -215,17 +204,17 @@ int main()
 
 	// Criação de curvas de Bezier para movimentação de cada cubo
 	std::vector<glm::vec3> bezierControlPoints1 = {
-		glm::vec3(0.0f, 0.4f, 0.0f),    // Ponto inicial (posição inicial do cubo 1)
-		glm::vec3(1.5f, 1.5f, 0.0f),    // Controle para puxar para cima e direita
-		glm::vec3(-1.5f, 1.5f, 0.0f),   // Controle para puxar para cima e esquerda
-		glm::vec3(0.0f, 0.4f, 0.0f)     // Retorno ao ponto inicial (movimento cíclico fechado)
+		glm::vec3(0.0f, 0.4f, 0.0f),    // Ponto inicial do cubo 1
+		glm::vec3(1.5f, 1.5f, 0.0f),    
+		glm::vec3(-1.5f, 1.5f, 0.0f),   
+		glm::vec3(0.0f, 0.4f, 0.0f)     // Retorna ao início (movimento cíclico)
 	};
 
 	std::vector<glm::vec3> bezierControlPoints2 = {
-		glm::vec3(0.0f, -0.4f, 0.0f),   // Ponto inicial (posição inicial do cubo 2)
-		glm::vec3(-1.5f, -1.5f, 0.0f),  // Puxa para baixo e esquerda
-		glm::vec3(1.5f, -1.5f, 0.0f),   // Puxa para baixo e direita
-		glm::vec3(0.0f, -0.4f, 0.0f)    // Volta ao início
+		glm::vec3(0.0f, -0.4f, 0.0f),   // Ponto inicial do cubo 2
+		glm::vec3(-1.5f, -1.5f, 0.0f),
+		glm::vec3(1.5f, -1.5f, 0.0f),   
+		glm::vec3(0.0f, -0.4f, 0.0f)    // Retorna ao início (movimento cíclico)
 	};
 	
 	// 100 pontos por segmento com velocidade de 0.1s por segmento
@@ -246,11 +235,11 @@ int main()
 
 		// Instanciação dos cubos
 		model1 = glm::mat4(1);
-		model1 = glm::translate(model1, positionCube1); // Move cubo 1 para cima
+		model1 = glm::translate(model1, positionCube1);
 		model2 = glm::mat4(1);
-		model2 = glm::translate(model2, positionCube2); // Move cubo 1 para baixo
+		model2 = glm::translate(model2, positionCube2);
 
-		// Verifica se houveram eventos de input e chama as funções de callback
+		// Verifica se houveram eventos de input e chama funções de callback
 		glfwPollEvents();
 		camera.updateCameraPos(window, deltaTime);
 		
@@ -258,7 +247,7 @@ int main()
 		glUniformMatrix4fv(glGetUniformLocation(shaderID, "view"), 1, GL_FALSE, glm::value_ptr(view)); // Enviar view atualizada para o shader
 		glUniform3fv(glGetUniformLocation(shaderID, "viewPos"), 1, glm::value_ptr(camera.cameraPos)); // Atualiza a viewPos usada no cálculo de iluminação
 
-		// Gerando projeção, para fazer a profundidade na tela
+		// Gerando projeção (profundidade na tela)
 		glm::mat4 projection = glm::perspective(
 			glm::radians(camera.fov),
 			(float)WIDTH / (float)HEIGHT,
@@ -401,12 +390,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (key == GLFW_KEY_X && action == GLFW_PRESS) { // Diminui a escala e impede valores negativos
         scale = glm::max(0.1f, scale - 0.1f); 
     }
-	if (key == GLFW_KEY_I && action == GLFW_PRESS) { // Move no eixo Z (para frente)
-		z += 0.2f;
-	}
-	if (key == GLFW_KEY_J && action == GLFW_PRESS) { // Move no eixo Z (para trás)
-		z -= 0.2f;
-	}
 }
 
 // Função de callback do mouse
@@ -545,7 +528,6 @@ std::pair<GLuint, GLuint> loadOBJ(const string& path, int &nVertices) {
 		vBuffer.push_back(v.texCoords.y);
 	}
 	
-	std::cout << "Gerando o buffer de geometria..." << std::endl;
 	GLuint VBO, VAO;
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
