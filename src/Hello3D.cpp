@@ -1,4 +1,4 @@
-/* Hello Triangle - Marcelo Daros */
+/* Hello Cube - Marcelo Daros */
 // Configuração do cmake:
 // Ctrl + Shift + P > CMake: Scan for kit
 // Ctrl + Shift + P > CMake: Select a kit
@@ -25,7 +25,6 @@ using namespace std;
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
 #include "Camera.h"
 
 // Protótipo das funções de callback de teclado e cursor
@@ -161,12 +160,6 @@ int main()
 	{
 		std::cout << "Failed to initialize GLAD" << std::endl;
 	}
-
-	// Obtendo as informações de versão
-	const GLubyte* renderer = glGetString(GL_RENDERER); /* get renderer string */
-	const GLubyte* version = glGetString(GL_VERSION); /* version as a string */
-	cout << "Renderer: " << renderer << endl;
-	cout << "OpenGL version supported " << version << endl;
 
 	// Definindo as dimensões da viewport com as mesmas dimensões da janela da aplicação
 	int width, height;
@@ -309,7 +302,7 @@ int main()
 		// Troca os buffers da tela
 		glfwSwapBuffers(window);
 	}
-	// Pede pra OpenGL desalocar os buffers
+	// Desaloca os buffers
 	glDeleteVertexArrays(1, &VAO1);
 	glDeleteVertexArrays(1, &VAO2);
 	// Finaliza a execução da GLFW, limpando os recursos alocados por ela
@@ -521,7 +514,6 @@ std::pair<GLuint, GLuint> loadOBJ(const string& path, int &nVertices) {
 		vBuffer.push_back(v.texCoords.y);
 	}
 	
-	std::cout << "Gerando o buffer de geometria..." << std::endl;
 	GLuint VBO, VAO;
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
