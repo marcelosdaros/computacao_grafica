@@ -16,6 +16,7 @@ using namespace std;
 #include "json.hpp"
 #include <fstream>
 #include <vector>
+#include <iostream>
 using json = nlohmann::json;
 
 // Camera global e posição inicial da câmera
