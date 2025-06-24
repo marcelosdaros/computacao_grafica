@@ -10,4 +10,4 @@ Marcelo Strack Daros
 * **Desafio M3**: entregue na branch **tarefa_M3**: dois cubos (vindos do .obj) com texturas distintas (vindas do .mtl).
 * **Desafio M4**: entregue na branch **tarefa_M4**: mesmos cubos da tarefa anterior, com iluminação (modelo de Phong).
 * **Desafio M5**: entregue na branch **tarefa_M5**: mesmos cubos, com implementação de câmera em primeira pessoa (classe Camera), com movimento da câmera pelas teclas WASD e controle da direção pelo mouse (com zoom via scroll).
-* **Desafio M6**: entregue na branch **tarefa_M6**
+* **Desafio M6**: entregue na branch **tarefa_M6**: mesmos cubos, com implementação de curvas de Bezier. Faltou implementar os pontos via teclado ou mouse (fiz os pontos no próprio código), e a translação foi feita de maneira cíclica (ao chegar no último ponto, o objeto volta para a primeira posição seguindo o caminho percorrido).
