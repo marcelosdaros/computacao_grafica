@@ -149,7 +149,6 @@ public:
             vBuffer.push_back(v.texCoords.y);
         }
         
-        std::cout << "Gerando o buffer de geometria..." << std::endl;
         GLuint VBO, VAO;
         glGenBuffers(1, &VBO);
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
